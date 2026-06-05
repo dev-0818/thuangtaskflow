@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TaskFlow - Manager Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#393939",
+                        "surface-container-lowest": "#0e0e0e",
+                        "on-tertiary-fixed": "#2a1701",
+                        "surface-container-low": "#1c1b1b",
+                        "primary": "#e6c098",
+                        "on-primary-container": "#3d260a",
+                        "on-secondary": "#313032",
+                        "tertiary-fixed-dim": "#e4c098",
+                        "outline": "#9b8f84",
+                        "on-surface-variant": "#d2c4b8",
+                        "error": "#ffb4ab",
+                        "error-container": "#93000a",
+                        "secondary-fixed": "#e6e1e3",
+                        "inverse-on-surface": "#313030",
+                        "tertiary": "#e4c098",
+                        "surface-container-highest": "#353534",
+                        "on-surface": "#e5e2e1",
+                        "surface-container": "#201f1f",
+                        "primary-container": "#ae8c68",
+                        "primary-fixed-dim": "#e6c098",
+                        "primary-fixed": "#ffddba",
+                        "secondary-container": "#484648",
+                        "on-tertiary-container": "#3c270b",
+                        "on-primary-fixed-variant": "#5c4223",
+                        "surface-tint": "#e6c098",
+                        "tertiary-container": "#ad8d68",
+                        "tertiary-fixed": "#ffddb8",
+                        "on-primary": "#432c0f",
+                        "on-secondary-fixed-variant": "#484648",
+                        "on-error": "#690005",
+                        "inverse-surface": "#e5e2e1",
+                        "surface-variant": "#353534",
+                        "inverse-primary": "#765939",
+                        "surface-container-high": "#2a2a2a",
+                        "on-error-container": "#ffdad6",
+                        "on-background": "#e5e2e1",
+                        "on-tertiary-fixed-variant": "#5b4223",
+                        "background": "#131313",
+                        "outline-variant": "#4f453c",
+                        "on-secondary-fixed": "#1c1b1d",
+                        "surface-dim": "#131313",
+                        "surface": "#131313",
+                        "secondary-fixed-dim": "#c9c5c7",
+                        "secondary": "#c9c5c7",
+                        "on-primary-fixed": "#2b1701",
+                        "on-secondary-container": "#b8b4b6",
+                        "on-tertiary": "#422c0f"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-max": "1280px",
+                        "margin-desktop": "40px",
+                        "base": "8px",
+                        "gutter": "24px",
+                        "margin-mobile": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #131313; color: #e5e2e1; }
+        .glass-panel { background: rgba(30, 30, 30, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(201, 197, 199, 0.2); }
+        .card-border { border: 1px solid rgba(74, 72, 74, 0.3); }
+        
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(74, 72, 74, 0.5); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(74, 72, 74, 0.8); }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex antialiased">
+<!-- SideNavBar (Desktop) -->
+<nav class="bg-surface fixed left-0 top-0 h-full w-64 hidden md:flex flex-col border-r border-secondary/20 py-8 gap-y-4 z-40">
+<div class="px-8 mb-6">
+<h1 class="font-headline-md text-headline-md text-primary font-bold tracking-tight">TaskFlow</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1 uppercase tracking-widest">Premium Workspace</p>
+</div>
+<div class="flex-1 flex flex-col gap-y-1 px-4">
+<!-- Active: Dashboard -->
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-primary border-r-2 border-primary bg-primary/5 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-secondary/10 hover:text-on-surface transition-all duration-200 cursor-pointer active:scale-95" href="#">
+<span class="material-symbols-outlined">assignment</span>
+<span class="font-label-md text-label-md">Tasks</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-secondary/10 hover:text-on-surface transition-all duration-200 cursor-pointer active:scale-95" href="#">
+<span class="material-symbols-outlined">calendar_today</span>
+<span class="font-label-md text-label-md">Calendar</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-secondary/10 hover:text-on-surface transition-all duration-200 cursor-pointer active:scale-95" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-md text-label-md">User Management</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-secondary/10 hover:text-on-surface transition-all duration-200 cursor-pointer active:scale-95" href="#">
+<span class="material-symbols-outlined">badge</span>
+<span class="font-label-md text-label-md">Job Titles</span>
+</a>
+</div>
+<div class="px-8 mt-auto flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-high border border-outline-variant overflow-hidden">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A striking professional headshot of a mature individual set against a deep charcoal background, illuminated by soft, moody studio lighting that highlights subtle bronze tones. The aesthetic is strictly minimalist and high-end, aligning with a premium dark-mode interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHtMKh6SvXmHFk5COni-XyXTWhF8EcxCkiGhlS5FFeZahZOBIQIE1mFOHY9pfCaLHj-5WjNtVMCwx7vP7loA5JVcafhrhTVYL4Fl7xYby1FDsvsjAjbPJDQAl8Yuk2MdLdhEcFINFGwu0SFQ20L2pkvXJ6q3VchTjzjZkKLANP1MMgg3YHwfYJLLFxpAU-yplbx3J1ez0WaZGEnxDuG37FCFpU0-z1-va8-GEVNDF-U-ZOKTQ7-01dlW1zobBBWc_nPM0zPRqe9w"/>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Alex Mercer</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Manager</p>
+</div>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col md:ml-64 w-full pb-24 md:pb-8 relative">
+<!-- TopNavBar (Mobile Header Context - Desktop hidden due to SideNav taking brand) -->
+<header class="bg-surface/60 backdrop-blur-xl fixed top-0 w-full z-50 border-b border-secondary/20 flex justify-between items-center px-margin-mobile h-16 md:hidden">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">TaskFlow</h1>
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors cursor-pointer active:scale-95">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors cursor-pointer active:scale-95">account_circle</span>
+</div>
+</header>
+<!-- Top AppBar Action Row (Desktop) -->
+<header class="hidden md:flex justify-between items-center px-margin-desktop py-6 w-full max-w-container-max mx-auto">
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Overview</h2>
+<div class="flex items-center gap-6">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors cursor-pointer">search</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors cursor-pointer relative">
+                     notifications
+                     <span class="absolute top-0 right-0 w-2 h-2 bg-primary rounded-full"></span>
+</button>
+<button class="bg-primary text-on-primary font-label-md text-label-md px-6 py-2.5 rounded-lg hover:bg-primary-container transition-colors shadow-none">
+                     New Task
+                 </button>
+</div>
+</header>
+<!-- Mobile Header Spacer -->
+<div class="h-20 md:hidden"></div>
+<!-- Dashboard Content -->
+<div class="px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto w-full flex flex-col gap-y-12">
+<div class="md:hidden mb-2">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Overview</h2>
+</div>
+<!-- Metrics Bento Grid -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Active Tasks -->
+<div class="glass-panel p-6 rounded-xl flex flex-col justify-between h-40">
+<div class="flex justify-between items-start">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Active Tasks</span>
+<span class="material-symbols-outlined text-primary">timeline</span>
+</div>
+<div class="flex items-end justify-between">
+<span class="font-display-lg text-display-lg text-on-surface">124</span>
+<span class="font-label-sm text-label-sm text-primary flex items-center bg-primary/10 px-2 py-1 rounded">
+<span class="material-symbols-outlined text-[14px] mr-1">arrow_upward</span> 12%
+                        </span>
+</div>
+</div>
+<!-- Completed Subtasks -->
+<div class="glass-panel p-6 rounded-xl flex flex-col justify-between h-40">
+<div class="flex justify-between items-start">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Completed</span>
+<span class="material-symbols-outlined text-on-surface-variant">check_circle</span>
+</div>
+<div class="flex items-end justify-between">
+<span class="font-display-lg text-display-lg text-on-surface">892</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant flex items-center bg-surface-container-high px-2 py-1 rounded">
+                            This Month
+                        </span>
+</div>
+</div>
+<!-- Overdue -->
+<div class="bg-surface-container-high border border-error/20 p-6 rounded-xl flex flex-col justify-between h-40 relative overflow-hidden">
+<!-- Subtle red glow -->
+<div class="absolute top-0 right-0 w-32 h-32 bg-error/5 rounded-full blur-2xl -mr-10 -mt-10"></div>
+<div class="flex justify-between items-start relative z-10">
+<span class="font-label-md text-label-md text-error/80 uppercase tracking-wider">Overdue</span>
+<span class="material-symbols-outlined text-error">warning</span>
+</div>
+<div class="flex items-end justify-between relative z-10">
+<span class="font-display-lg text-display-lg text-on-surface">14</span>
+<span class="font-label-sm text-label-sm text-error flex items-center bg-error/10 px-2 py-1 rounded">
+                            Requires Action
+                        </span>
+</div>
+</div>
+</section>
+<!-- Main Split Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Urgent Attention (Left - Takes up 2 columns) -->
+<section class="lg:col-span-2 flex flex-col gap-6">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-md text-headline-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container">priority_high</span>
+                            Urgent Attention
+                        </h3>
+<button class="font-label-sm text-label-sm text-primary hover:text-primary-fixed transition-colors">View All</button>
+</div>
+<div class="flex flex-col gap-4">
+<!-- Task Item 1 -->
+<div class="bg-surface-container card-border rounded-lg p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group hover:border-primary/30 transition-colors relative overflow-hidden">
+<!-- H-3 Highlight line -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary-container"></div>
+<div class="flex items-start gap-4 pl-2">
+<!-- Custom Checkbox -->
+<div class="w-5 h-5 mt-0.5 border border-outline rounded flex items-center justify-center cursor-pointer hover:border-primary transition-colors flex-shrink-0"></div>
+<div>
+<h4 class="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors">Finalize Q3 Marketing Assets</h4>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1">Campaign: Zenith Launch</p>
+</div>
+</div>
+<div class="flex items-center gap-4 pl-11 sm:pl-0">
+<div class="flex -space-x-2">
+<img alt="Assignee" class="w-8 h-8 rounded-full border-2 border-surface-container" data-alt="A minimalist professional portrait of a woman against a dark grey background, lit with soft diffused lighting to match a premium dark UI aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDrVKCumvLKDOu_2nvNn0Q5qDsXn5f_2T0yvlz24bap08rS2nx9RM21Dn8qExk0PsD-WJqfIp_5AfOdi0OtiATvh9WHiopoTv0rWKyitPT2ely7m0PRE1DKmEVKHDs7tX_94Jtc5Ux0arQxrPcZR3Ik0BJDpKmULuu9Z0hVBTCrLdKFpCSujmzRFY4lyoCMUrqmNvw5PwOPI9lZFORABbVGDlfnuyCo-JcQ9d-hPN6si68zUOM4WVVmx7FmbYtiemmdwC7B0nGXjQ"/>
+<div class="w-8 h-8 rounded-full border-2 border-surface-container bg-surface-bright flex items-center justify-center font-label-sm text-label-sm text-on-surface">+2</div>
+</div>
+<div class="bg-primary-container/20 px-3 py-1.5 rounded text-primary-container font-label-sm text-label-sm flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+                                    Due in 2 days
+                                </div>
+</div>
+</div>
+<!-- Task Item 2 -->
+<div class="bg-surface-container card-border rounded-lg p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group hover:border-primary/30 transition-colors relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary-container"></div>
+<div class="flex items-start gap-4 pl-2">
+<div class="w-5 h-5 mt-0.5 border border-outline rounded flex items-center justify-center cursor-pointer hover:border-primary transition-colors flex-shrink-0"></div>
+<div>
+<h4 class="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors">Review Security Audit Compliance</h4>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1">Infrastructure Ops</p>
+</div>
+</div>
+<div class="flex items-center gap-4 pl-11 sm:pl-0">
+<div class="flex -space-x-2">
+<img alt="Assignee" class="w-8 h-8 rounded-full border-2 border-surface-container" data-alt="A minimalist professional portrait of a man against a dark grey background, lit with soft diffused lighting to match a premium dark UI aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCNz3HoDwL-YR40NeYr-0NA96WFEcq_AIL6FOWR-Caa9OkGpLt_PY9s0J6nYoBcdIDMQJz10U3JlFq6mEudCcxKMd7mpALsCbhFO9agnrrGRfCRxu3I6asQOmgp7PTpo7wUq2lc0-zgZCXMmsVTkmBP1C0IeSuuBqDehRSqkOYFeUFjeLe0Y2a0xjjgksxKabs5huo2Mo6Z4_y-VHYFYrTeFh-a8uOa2DeiYK0Pl6SfiO8InJsD-TY7EBVa9khaaMXuuWnJxFpE8A"/>
+</div>
+<div class="bg-primary-container/20 px-3 py-1.5 rounded text-primary-container font-label-sm text-label-sm flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+                                    Due Tomorrow
+                                </div>
+</div>
+</div>
+<!-- Task Item 3 -->
+<div class="bg-surface-container card-border rounded-lg p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group hover:border-primary/30 transition-colors relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary-container"></div>
+<div class="flex items-start gap-4 pl-2">
+<div class="w-5 h-5 mt-0.5 border border-outline rounded flex items-center justify-center cursor-pointer hover:border-primary transition-colors flex-shrink-0"></div>
+<div>
+<h4 class="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors">Client Presentation Deck Review</h4>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1">Account Management</p>
+</div>
+</div>
+<div class="flex items-center gap-4 pl-11 sm:pl-0">
+<div class="flex -space-x-2">
+<img alt="Assignee" class="w-8 h-8 rounded-full border-2 border-surface-container" data-alt="A minimalist professional portrait of a woman against a dark grey background, lit with soft diffused lighting to match a premium dark UI aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBjs2dIljOdpbkuaLFUGks5CZ0pm-VWMMjFTx3vzabvbhLyWMYP0U1T-Fm4cSZRqOUH2a4q0VX3TxPOwDZxIz2DQEXDaOXfGM-Hcaw11xChzt8OUSSFVBeLg4N5KFlM-cYrVjbkrQ9VIyE_B4LkXZEW0G2tHoQ7BHrimpLT3jLApZoXsA9vCLz7xj-oV4oGkIh0EWlgf8GUz_oeZnPUHumnsqwJItKo0NsbyQ8e2cOSxDS7nV2JZYqFciS5OXtKSkJHIPkpczs43w"/>
+<img alt="Assignee" class="w-8 h-8 rounded-full border-2 border-surface-container" data-alt="A minimalist professional portrait of a man against a dark grey background, lit with soft diffused lighting to match a premium dark UI aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCqrXylZZIpEjyFHqi0VcM4TX7H4d1qOBPvicOG3jqvXJlrPiC_okLAHghSHl4d7fj00oMIirvsYTx9JZ1mIB1901OPhn0fIRn2noXP7Q0W_EpL-eV5h7ft9Z7Qn7ZNaKq6YUAuaS2VW2Ev8LXdeWfWK_6ouDttiTwrRZsc70OEgNAoUu07yzgBXjxHDc3vDsGkAUGH28OuPwhFjl4gXV8cHX04UfBAtcTQ4Ytvm-H0W3eggj3JB_rkkxNr5snPf25er3y6Csx6Pw"/>
+</div>
+<div class="bg-primary-container/20 px-3 py-1.5 rounded text-primary-container font-label-sm text-label-sm flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+                                    Due in 3 days
+                                </div>
+</div>
+</div>
+</div>
+</section>
+<!-- Team Workload (Right - Takes up 1 column) -->
+<section class="flex flex-col gap-6">
+<h3 class="font-headline-md text-headline-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant">group_work</span>
+                        Team Workload
+                    </h3>
+<div class="glass-panel rounded-xl p-6 flex flex-col gap-6">
+<!-- Workload Item -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-3">
+<img alt="Team Member" class="w-8 h-8 rounded-full" data-alt="A minimalist professional portrait of a woman against a dark grey background, lit with soft diffused lighting to match a premium dark UI aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpN8RwwyUwL0MnCJVypKVfDXC1yQ1XFgQS5xQQd0q88V_Es26EYuc_cbrwxvM_3dkaXk_2vHezu3WD7xBE-_uMd_c9SS6gTPsfwphRd6RCA4MUyX92XPVYMJvHdhDXwI_sPHXgXeAYqhJH7FnkuDsD48JCTu1o1NypNiCwKP_Msn-BvEZKT-LieB9UvupCCXLYTzvrNLlnH5EFCkhOhKeOVwkfatEebZ2M-qw1GuGqk9HdIy_tE65JHkNaLoa7UIubrThU2HHTZw"/>
+<span class="font-label-md text-label-md text-on-surface">Sarah J.</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">24 tasks</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 85%"></div>
+</div>
+</div>
+<!-- Workload Item -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-3">
+<img alt="Team Member" class="w-8 h-8 rounded-full" data-alt="A minimalist professional portrait of a man against a dark grey background, lit with soft diffused lighting to match a premium dark UI aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnTRZfbYOspsMbRalVDdnUrmAmdKG2VrxsNJs1oSx9PbrJ-vuEXWUhHDCTiD62udWwEcGdyO61aUsbhvLiTFL6blk_iuO3S0XmRzspeqvwYEC3Mtyyj8ZqVATX9ckZAW959aTRx17F9JFJSfemvYFDbtzGAIYnQeL7dNBZhbS6CU5b_s1-QEQ0jweA_oKbvb_HRRBJ4FwQ-cO40TCoQPIFXzn9-FjjqmwKvdGYWwAdrDvKzwR4bzc_oz9xsfSAEP0eDGFwYCokNQ"/>
+<span class="font-label-md text-label-md text-on-surface">Marcus T.</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">18 tasks</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary-container h-full rounded-full" style="width: 65%"></div>
+</div>
+</div>
+<!-- Workload Item -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-3">
+<img alt="Team Member" class="w-8 h-8 rounded-full" data-alt="A minimalist professional portrait of a woman against a dark grey background, lit with soft diffused lighting to match a premium dark UI aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAq9182FP8LzilUWQGQdnYk3KTO2E1oiSYgWpnv-iBeWnxmDCr44bEfpYxtdOo0hV3D07ckMmqECLJ5c_ourD6B9W-SnhtpqFsw3KW9cmSC_watQMlL-Nu9HvGNiPeiK8Am1kmqPYji16APDWSYT7RflyxdD07Ojf0qdoS7_2ZxigVxq2QAGDQHkXv8Y8OgmqOwjSeJ_ADMvFsTX6Z3YkyrOmYnbiNOXQTlAyrz7CziPm7CHNrtl1wAAONjxv78R7ew_G2y6ThRWg"/>
+<span class="font-label-md text-label-md text-on-surface">Elena R.</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">12 tasks</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-surface-variant h-full rounded-full" style="width: 45%"></div>
+</div>
+</div>
+<button class="w-full mt-2 py-2 border border-secondary-container rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high transition-colors">
+                            View Resource Allocation
+                        </button>
+</div>
+</section>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="bg-surface/80 backdrop-blur-xl fixed bottom-0 w-full md:hidden rounded-t-xl z-50 flex justify-around items-center px-4 pb-safe h-16 border-t-0 shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
+<a class="flex flex-col items-center justify-center text-primary bg-primary/10 rounded-xl p-2 w-16 h-12 tap-highlight-transparent" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-label-sm text-label-sm-mobile mt-0.5">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 w-16 h-12 tap-highlight-transparent active:bg-secondary/20 rounded-xl" href="#">
+<span class="material-symbols-outlined text-[20px]">assignment</span>
+<span class="font-label-sm text-label-sm-mobile mt-0.5">Tasks</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 w-16 h-12 tap-highlight-transparent active:bg-secondary/20 rounded-xl" href="#">
+<span class="material-symbols-outlined text-[20px]">calendar_today</span>
+<span class="font-label-sm text-label-sm-mobile mt-0.5">Calendar</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 w-16 h-12 tap-highlight-transparent active:bg-secondary/20 rounded-xl" href="#">
+<span class="material-symbols-outlined text-[20px]">menu</span>
+<span class="font-label-sm text-label-sm-mobile mt-0.5">Menu</span>
+</a>
+</nav>
+<script>
+        // Simple micro-interaction for checkboxes
+        document.querySelectorAll('.border-outline.rounded.flex').forEach(box => {
+            box.addEventListener('click', function() {
+                const textElement = this.nextElementSibling.querySelector('h4');
+                if (this.innerHTML === '') {
+                    this.innerHTML = '<span class="material-symbols-outlined text-[14px] text-surface-container-lowest">check</span>';
+                    this.classList.replace('border-outline', 'border-primary');
+                    this.classList.add('bg-primary');
+                    textElement.classList.add('line-through', 'opacity-50');
+                } else {
+                    this.innerHTML = '';
+                    this.classList.replace('border-primary', 'border-outline');
+                    this.classList.remove('bg-primary');
+                    textElement.classList.remove('line-through', 'opacity-50');
+                }
+            });
+        });
+    </script>
+</body></html>

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TaskFlow - Create New Task</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#ffddb8",
+                        "surface-dim": "#131313",
+                        "on-tertiary-fixed-variant": "#5b4223",
+                        "surface-bright": "#393939",
+                        "inverse-on-surface": "#313030",
+                        "error-container": "#93000a",
+                        "secondary-fixed-dim": "#c9c5c7",
+                        "outline": "#9b8f84",
+                        "on-background": "#e5e2e1",
+                        "surface-container-lowest": "#0e0e0e",
+                        "secondary-fixed": "#e6e1e3",
+                        "on-surface-variant": "#d2c4b8",
+                        "primary": "#e6c098",
+                        "tertiary-fixed-dim": "#e4c098",
+                        "inverse-primary": "#765939",
+                        "on-secondary-fixed-variant": "#484648",
+                        "on-error-container": "#ffdad6",
+                        "surface-tint": "#e6c098",
+                        "surface-container-low": "#1c1b1b",
+                        "surface-container": "#201f1f",
+                        "background": "#131313",
+                        "error": "#ffb4ab",
+                        "tertiary": "#e4c098",
+                        "primary-fixed-dim": "#e6c098",
+                        "secondary-container": "#484648",
+                        "surface-variant": "#353534",
+                        "on-surface": "#e5e2e1",
+                        "on-tertiary-fixed": "#2a1701",
+                        "on-primary-container": "#3d260a",
+                        "on-error": "#690005",
+                        "outline-variant": "#4f453c",
+                        "on-secondary": "#313032",
+                        "inverse-surface": "#e5e2e1",
+                        "on-tertiary": "#422c0f",
+                        "surface": "#131313",
+                        "on-primary-fixed": "#2b1701",
+                        "surface-container-high": "#2a2a2a",
+                        "on-secondary-container": "#b8b4b6",
+                        "secondary": "#c9c5c7",
+                        "on-secondary-fixed": "#1c1b1d",
+                        "on-primary-fixed-variant": "#5c4223",
+                        "tertiary-container": "#ad8d68",
+                        "primary-fixed": "#ffddba",
+                        "on-primary": "#432c0f",
+                        "primary-container": "#ae8c68",
+                        "surface-container-highest": "#353534",
+                        "on-tertiary-container": "#3c270b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-desktop": "40px",
+                        "base": "8px",
+                        "margin-mobile": "16px",
+                        "gutter": "24px",
+                        "container-max": "1280px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-lg-mobile": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "500" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[data-weight="fill"] {
+            font-variation-settings: 'FILL' 1;
+        }
+        /* Custom Scrollbar for minimalist look */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #353534;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #484648;
+        }
+        
+        /* Subtle glowing inputs */
+        .glass-input {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(201, 197, 199, 0.2);
+            color: #e5e2e1;
+            transition: all 0.3s ease;
+            box-shadow: none !important;
+        }
+        .glass-input:focus {
+            outline: none;
+            border-bottom-color: #ae8c68;
+            background: linear-gradient(180deg, rgba(174, 140, 104, 0) 0%, rgba(174, 140, 104, 0.05) 100%);
+        }
+        
+        /* Modal Animation */
+        .modal-enter {
+            opacity: 0;
+            transform: translateY(20px) scale(0.98);
+            animation: modalFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes modalFadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md antialiased overflow-hidden selection:bg-primary-container/30 selection:text-primary">
+<!-- Background Canvas (Simulating Task Management Screen underneath) -->
+<div class="fixed inset-0 z-0 opacity-20 pointer-events-none" style="background-image: radial-gradient(circle at 50% 0%, #2a2a2a 0%, #131313 70%);"></div>
+<!-- Navigation Shell (Desktop TopAppBar) - SUPPRESSED AS PER RULES FOR TRANSACTIONAL/MODAL SCREENS -->
+<!-- Modal Overlay Backdrop -->
+<div class="fixed inset-0 z-40 bg-background/80 backdrop-blur-md flex items-center justify-center p-4 md:p-margin-desktop transition-opacity duration-300">
+<!-- Modal Container -->
+<main class="w-full max-w-3xl bg-surface-container rounded-xl border border-secondary/20 shadow-2xl overflow-hidden flex flex-col max-h-[921px] modal-enter relative">
+<!-- Header -->
+<header class="px-8 py-6 border-b border-secondary/10 flex items-center justify-between bg-surface-container-low shrink-0 relative z-10">
+<div>
+<h1 class="font-headline-md text-headline-md text-on-surface">Create New Task</h1>
+<p class="font-label-md text-label-md text-on-surface-variant mt-1">Add details and subtasks for your new assignment.</p>
+</div>
+<button aria-label="Close modal" class="p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-variant rounded-full transition-colors cursor-pointer group" type="button">
+<span class="material-symbols-outlined text-[24px] group-hover:rotate-90 transition-transform duration-300">close</span>
+</button>
+</header>
+<!-- Scrollable Content Area -->
+<div class="flex-1 overflow-y-auto px-8 py-8 space-y-10">
+<!-- Section: Main Task Details -->
+<section class="space-y-6">
+<!-- Task Title -->
+<div class="group relative">
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2 transition-colors group-focus-within:text-primary" for="task-title">Task Title</label>
+<input autocomplete="off" class="w-full glass-input font-body-lg text-body-lg py-3 px-2" id="task-title" placeholder="e.g., Q3 Marketing Campaign Strategy" type="text"/>
+</div>
+<!-- Task Description -->
+<div class="group relative">
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2 transition-colors group-focus-within:text-primary" for="task-desc">Description</label>
+<textarea class="w-full glass-input font-body-md text-body-md py-3 px-2 resize-none" id="task-desc" placeholder="Briefly describe the objective and scope..." rows="3"></textarea>
+</div>
+</section>
+<!-- Section: Subtasks -->
+<section>
+<div class="flex items-center justify-between mb-6">
+<h2 class="font-label-md text-label-md text-on-surface tracking-wide uppercase">Initial Subtasks</h2>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-variant px-3 py-1 rounded-full">2 Added</span>
+</div>
+<!-- Subtasks List Container -->
+<div class="space-y-4" id="subtask-container">
+<!-- Subtask Item 1 -->
+<div class="bg-surface border border-secondary/10 rounded-lg p-5 group hover:border-secondary/30 transition-colors relative">
+<!-- Drag handle -->
+<div class="absolute left-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-50 cursor-grab px-1">
+<span class="material-symbols-outlined text-[20px]">drag_indicator</span>
+</div>
+<div class="ml-6 space-y-4">
+<input class="w-full bg-transparent border-none text-on-surface font-body-md text-body-md focus:ring-0 p-0 placeholder-on-surface-variant/50 focus:text-primary transition-colors" placeholder="Subtask title" type="text" value="Research competitor ad spend"/>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-secondary/5">
+<!-- Assignee -->
+<div class="relative flex items-center">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant mr-2">person</span>
+<select class="bg-transparent border-none text-on-surface-variant font-label-md text-label-md focus:ring-0 p-0 cursor-pointer w-full appearance-none">
+<option class="bg-surface-container text-on-surface" value="sarah">Sarah J.</option>
+<option class="bg-surface-container text-on-surface" value="mike">Mike T.</option>
+<option class="bg-surface-container text-on-surface" value="unassigned">Unassigned</option>
+</select>
+</div>
+<!-- Date -->
+<div class="relative flex items-center">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant mr-2">calendar_today</span>
+<input class="bg-transparent border-none text-on-surface-variant font-label-md text-label-md focus:ring-0 p-0 w-full cursor-pointer [color-scheme:dark]" type="date"/>
+</div>
+<!-- Time -->
+<div class="relative flex items-center">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant mr-2">schedule</span>
+<input class="bg-transparent border-none text-on-surface-variant font-label-md text-label-md focus:ring-0 p-0 w-full cursor-pointer [color-scheme:dark]" type="time"/>
+</div>
+</div>
+</div>
+<!-- Remove Button -->
+<button aria-label="Remove subtask" class="absolute right-3 top-3 opacity-0 group-hover:opacity-100 text-on-surface-variant hover:text-error transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+<!-- Subtask Item 2 -->
+<div class="bg-surface border border-secondary/10 rounded-lg p-5 group hover:border-secondary/30 transition-colors relative">
+<div class="absolute left-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-50 cursor-grab px-1">
+<span class="material-symbols-outlined text-[20px]">drag_indicator</span>
+</div>
+<div class="ml-6 space-y-4">
+<input class="w-full bg-transparent border-none text-on-surface font-body-md text-body-md focus:ring-0 p-0 placeholder-on-surface-variant/50 focus:text-primary transition-colors" placeholder="Subtask title" type="text" value="Draft initial copy concepts"/>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-secondary/5">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant mr-2">person</span>
+<select class="bg-transparent border-none text-on-surface-variant font-label-md text-label-md focus:ring-0 p-0 cursor-pointer w-full appearance-none">
+<option class="bg-surface-container text-on-surface" value="unassigned">Unassigned</option>
+<option class="bg-surface-container text-on-surface" value="sarah">Sarah J.</option>
+<option class="bg-surface-container text-on-surface" value="mike">Mike T.</option>
+</select>
+</div>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant mr-2">calendar_today</span>
+<input class="bg-transparent border-none text-on-surface-variant font-label-md text-label-md focus:ring-0 p-0 w-full cursor-pointer [color-scheme:dark]" type="date"/>
+</div>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant mr-2">schedule</span>
+<input class="bg-transparent border-none text-on-surface-variant font-label-md text-label-md focus:ring-0 p-0 w-full cursor-pointer [color-scheme:dark]" type="time"/>
+</div>
+</div>
+</div>
+<button aria-label="Remove subtask" class="absolute right-3 top-3 opacity-0 group-hover:opacity-100 text-on-surface-variant hover:text-error transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+<!-- Add Subtask Action -->
+<button class="mt-4 flex items-center font-label-md text-label-md text-primary hover:text-primary-fixed transition-colors py-2 group cursor-pointer" type="button">
+<span class="material-symbols-outlined mr-2 text-[20px] group-hover:scale-110 transition-transform">add_circle</span>
+                        Add Another Subtask
+                    </button>
+</section>
+</div>
+<!-- Footer Actions -->
+<footer class="px-8 py-6 border-t border-secondary/10 bg-surface-container-low shrink-0 flex items-center justify-end gap-4">
+<button class="font-label-md text-label-md px-6 py-2.5 rounded text-primary hover:bg-primary/10 transition-colors border border-transparent hover:border-primary/20 cursor-pointer" type="button">
+                    Cancel
+                </button>
+<button class="font-label-md text-label-md px-6 py-2.5 rounded bg-primary-container text-[#1c1b1b] hover:bg-[#c4a27d] transition-colors shadow-lg shadow-primary-container/10 active:scale-95 cursor-pointer flex items-center" type="button">
+<span class="material-symbols-outlined mr-2 text-[18px]">check</span>
+                    Create Task
+                </button>
+</footer>
+</main>
+</div>
+</body></html>

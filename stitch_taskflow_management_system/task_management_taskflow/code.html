@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TaskFlow - Tasks</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#393939",
+                        "surface-container-lowest": "#0e0e0e",
+                        "on-tertiary-fixed": "#2a1701",
+                        "surface-container-low": "#1c1b1b",
+                        "primary": "#e6c098",
+                        "on-primary-container": "#3d260a",
+                        "on-secondary": "#313032",
+                        "tertiary-fixed-dim": "#e4c098",
+                        "outline": "#9b8f84",
+                        "on-surface-variant": "#d2c4b8",
+                        "error": "#ffb4ab",
+                        "error-container": "#93000a",
+                        "secondary-fixed": "#e6e1e3",
+                        "inverse-on-surface": "#313030",
+                        "tertiary": "#e4c098",
+                        "surface-container-highest": "#353534",
+                        "on-surface": "#e5e2e1",
+                        "surface-container": "#201f1f",
+                        "primary-container": "#ae8c68",
+                        "primary-fixed-dim": "#e6c098",
+                        "primary-fixed": "#ffddba",
+                        "secondary-container": "#484648",
+                        "on-tertiary-container": "#3c270b",
+                        "on-primary-fixed-variant": "#5c4223",
+                        "surface-tint": "#e6c098",
+                        "tertiary-container": "#ad8d68",
+                        "tertiary-fixed": "#ffddb8",
+                        "on-primary": "#432c0f",
+                        "on-secondary-fixed-variant": "#484648",
+                        "on-error": "#690005",
+                        "inverse-surface": "#e5e2e1",
+                        "surface-variant": "#353534",
+                        "inverse-primary": "#765939",
+                        "surface-container-high": "#2a2a2a",
+                        "on-error-container": "#ffdad6",
+                        "on-background": "#e5e2e1",
+                        "on-tertiary-fixed-variant": "#5b4223",
+                        "background": "#131313",
+                        "outline-variant": "#4f453c",
+                        "on-secondary-fixed": "#1c1b1d",
+                        "surface-dim": "#131313",
+                        "surface": "#131313",
+                        "secondary-fixed-dim": "#c9c5c7",
+                        "secondary": "#c9c5c7",
+                        "on-primary-fixed": "#2b1701",
+                        "on-secondary-container": "#b8b4b6",
+                        "on-tertiary": "#422c0f"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-max": "1280px",
+                        "margin-desktop": "40px",
+                        "base": "8px",
+                        "gutter": "24px",
+                        "margin-mobile": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-lg-mobile": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #131313; color: #e5e2e1; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
+        .icon-fill { font-variation-settings: 'FILL' 1; }
+        
+        /* Custom Checkbox */
+        .task-checkbox { appearance: none; width: 16px; height: 16px; border: 1px solid #4a484a; border-radius: 4px; background-color: transparent; display: grid; place-content: center; cursor: pointer; transition: all 0.2s ease; }
+        .task-checkbox::before { content: ""; width: 8px; height: 8px; clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%); transform: scale(0); background-color: #131313; transition: 120ms transform ease-in-out; }
+        .task-checkbox:checked { background-color: #e6c098; border-color: #e6c098; }
+        .task-checkbox:checked::before { transform: scale(1); }
+        .task-checkbox:checked ~ .task-title { text-decoration: line-through; opacity: 0.5; }
+
+        /* Expand Transition */
+        .subtasks-container { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.3s ease-out; }
+        .subtasks-container.expanded { grid-template-rows: 1fr; }
+        .subtasks-inner { overflow: hidden; }
+        .expand-icon { transition: transform 0.3s ease; }
+        .expanded .expand-icon { transform: rotate(180deg); }
+    </style>
+</head>
+<body class="bg-background text-on-surface antialiased min-h-screen flex flex-col md:flex-row">
+<!-- TopNavBar (Mobile) -->
+<nav class="md:hidden bg-surface/60 backdrop-blur-xl fixed top-0 w-full z-50 border-b border-secondary/20 flex justify-between items-center px-margin-mobile h-16 w-full">
+<div class="font-headline-md text-headline-md font-bold text-primary">TaskFlow</div>
+<div class="flex gap-4 text-on-surface-variant">
+<span class="material-symbols-outlined cursor-pointer active:scale-95 hover:text-primary transition-colors" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined cursor-pointer active:scale-95 hover:text-primary transition-colors" data-icon="account_circle">account_circle</span>
+</div>
+</nav>
+<!-- SideNavBar (Desktop) -->
+<nav class="bg-surface fixed left-0 top-0 h-full w-64 hidden md:flex flex-col border-r border-secondary/20 py-8 gap-y-4 z-40">
+<div class="px-6 mb-8">
+<div class="font-headline-md text-headline-md text-primary font-bold">TaskFlow</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant mt-1">Premium Workspace</div>
+</div>
+<div class="flex flex-col w-full">
+<a class="flex items-center gap-3 px-6 py-3 text-on-surface-variant hover:bg-secondary/10 hover:text-on-surface transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-6 py-3 text-primary border-r-2 border-primary bg-primary/5 transition-all duration-200" href="#">
+<span class="material-symbols-outlined icon-fill" data-icon="assignment">assignment</span>
+<span class="font-label-md text-label-md">Tasks</span>
+</a>
+<a class="flex items-center gap-3 px-6 py-3 text-on-surface-variant hover:bg-secondary/10 hover:text-on-surface transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+<span class="font-label-md text-label-md">Calendar</span>
+</a>
+<a class="flex items-center gap-3 px-6 py-3 text-on-surface-variant hover:bg-secondary/10 hover:text-on-surface transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-md text-label-md">User Management</span>
+</a>
+<a class="flex items-center gap-3 px-6 py-3 text-on-surface-variant hover:bg-secondary/10 hover:text-on-surface transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="badge">badge</span>
+<span class="font-label-md text-label-md">Job Titles</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-64 pt-20 md:pt-8 px-margin-mobile md:px-margin-desktop pb-24 md:pb-8 max-w-container-max mx-auto w-full">
+<!-- Header Section -->
+<header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-12">
+<div>
+<h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-2">Tasks</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Manage and track your team's initiatives.</p>
+</div>
+<button class="bg-primary-container text-on-primary-container font-label-md text-label-md px-6 py-3 rounded hover:bg-primary-fixed transition-colors flex items-center gap-2 self-start sm:self-auto">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                Create New Task
+            </button>
+</header>
+<!-- Filters & Search -->
+<section class="flex flex-wrap items-center gap-4 mb-8">
+<div class="relative flex-1 min-w-[250px] max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container border-b border-secondary/30 text-on-surface font-body-md text-body-md pl-10 pr-4 py-2 focus:outline-none focus:border-primary focus:ring-0 rounded-t transition-colors placeholder:text-on-surface-variant/50" placeholder="Search tasks..." type="text"/>
+</div>
+<div class="flex gap-2">
+<button class="px-4 py-2 rounded-full border border-secondary/30 font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface hover:border-secondary/60 transition-colors flex items-center gap-1">
+                    Status <span class="material-symbols-outlined text-[16px]">arrow_drop_down</span>
+</button>
+<button class="px-4 py-2 rounded-full border border-secondary/30 font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface hover:border-secondary/60 transition-colors flex items-center gap-1">
+                    Priority <span class="material-symbols-outlined text-[16px]">arrow_drop_down</span>
+</button>
+</div>
+</section>
+<!-- Tasks List -->
+<section class="flex flex-col gap-4">
+<!-- Task Item 1 -->
+<article class="bg-surface-container rounded-lg border border-secondary/20 overflow-hidden">
+<div class="p-6 flex items-start gap-4 cursor-pointer hover:bg-surface-container-high transition-colors" onclick="this.parentElement.querySelector('.subtasks-container').classList.toggle('expanded'); this.classList.toggle('expanded')">
+<div class="mt-1">
+<span class="material-symbols-outlined text-primary expand-icon">expand_more</span>
+</div>
+<div class="flex-1">
+<div class="flex flex-wrap justify-between items-start gap-4 mb-2">
+<h2 class="font-headline-md text-headline-md text-on-surface">Q3 Marketing Campaign Overhaul</h2>
+<span class="px-2.5 py-1 rounded-full bg-secondary-container/50 font-label-sm text-label-sm text-on-surface-variant border border-secondary/20">In Progress</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4">Complete redesign and strategic alignment of all digital marketing assets for the upcoming quarter launch.</p>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">checklist</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">3 Subtasks</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-error text-[18px]">flag</span>
+<span class="font-label-sm text-label-sm text-error">High Priority</span>
+</div>
+<div class="flex items-center gap-2 ml-auto">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">calendar_today</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Oct 15, 2023</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Subtasks Area -->
+<div class="subtasks-container bg-surface border-t border-secondary/20">
+<div class="subtasks-inner px-6 py-4 flex flex-col gap-3">
+<!-- Subtask 1 -->
+<div class="flex items-center justify-between p-3 rounded hover:bg-surface-container-highest transition-colors group">
+<div class="flex items-center gap-3 flex-1">
+<input checked="" class="task-checkbox" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface task-title">Finalize ad copy and messaging</span>
+</div>
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-2 min-w-[120px]">
+<div class="w-6 h-6 rounded-full bg-surface-bright flex items-center justify-center font-label-sm text-label-sm text-primary border border-secondary/30">JD</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Jane Doe</span>
+</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant min-w-[100px] text-right">Oct 01, 14:00</div>
+<span class="px-2 py-0.5 rounded text-[10px] uppercase font-semibold tracking-wider bg-surface-container-highest text-on-surface-variant border border-secondary/30 w-16 text-center">Done</span>
+</div>
+</div>
+<!-- Subtask 2 -->
+<div class="flex items-center justify-between p-3 rounded hover:bg-surface-container-highest transition-colors group">
+<div class="flex items-center gap-3 flex-1">
+<input class="task-checkbox" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface task-title">Design banner assets</span>
+</div>
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-2 min-w-[120px]">
+<div class="w-6 h-6 rounded-full bg-surface-bright flex items-center justify-center font-label-sm text-label-sm text-primary border border-secondary/30">SM</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Sam Smith</span>
+</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant min-w-[100px] text-right">Oct 05, 17:00</div>
+<span class="px-2 py-0.5 rounded text-[10px] uppercase font-semibold tracking-wider bg-primary/20 text-primary border border-primary/30 w-16 text-center">Active</span>
+</div>
+</div>
+</div>
+</div>
+</article>
+<!-- Task Item 2 -->
+<article class="bg-surface-container rounded-lg border border-secondary/20 overflow-hidden">
+<div class="p-6 flex items-start gap-4 cursor-pointer hover:bg-surface-container-high transition-colors" onclick="this.parentElement.querySelector('.subtasks-container').classList.toggle('expanded'); this.classList.toggle('expanded')">
+<div class="mt-1">
+<span class="material-symbols-outlined text-primary expand-icon">expand_more</span>
+</div>
+<div class="flex-1">
+<div class="flex flex-wrap justify-between items-start gap-4 mb-2">
+<h2 class="font-headline-md text-headline-md text-on-surface">Client Onboarding Portal</h2>
+<span class="px-2.5 py-1 rounded-full bg-secondary-container/50 font-label-sm text-label-sm text-on-surface-variant border border-secondary/20">Planning</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4">Develop a self-service portal for new clients to submit initial requirements and documentation.</p>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">checklist</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">2 Subtasks</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">flag</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Normal</span>
+</div>
+<div class="flex items-center gap-2 ml-auto">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">calendar_today</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Nov 01, 2023</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Subtasks Area -->
+<div class="subtasks-container bg-surface border-t border-secondary/20">
+<div class="subtasks-inner px-6 py-4 flex flex-col gap-3">
+<!-- Subtask 1 -->
+<div class="flex items-center justify-between p-3 rounded hover:bg-surface-container-highest transition-colors group">
+<div class="flex items-center gap-3 flex-1">
+<input class="task-checkbox" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface task-title">Draft initial requirements doc</span>
+</div>
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-2 min-w-[120px]">
+<div class="w-6 h-6 rounded-full bg-surface-bright flex items-center justify-center font-label-sm text-label-sm text-primary border border-secondary/30">AL</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Alex Lee</span>
+</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant min-w-[100px] text-right">Oct 20, 12:00</div>
+<span class="px-2 py-0.5 rounded text-[10px] uppercase font-semibold tracking-wider bg-surface-container-highest text-on-surface-variant border border-secondary/30 w-16 text-center">Todo</span>
+</div>
+</div>
+</div>
+</div>
+</article>
+</section>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="fixed bottom-0 w-full md:hidden rounded-t-xl bg-surface/80 backdrop-blur-xl border-t border-secondary/20 shadow-lg z-50 flex justify-around items-center px-4 pb-safe h-16">
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 tap-highlight-transparent active:bg-secondary/20" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary bg-primary/10 rounded-xl p-2 tap-highlight-transparent active:bg-secondary/20" href="#">
+<span class="material-symbols-outlined icon-fill" data-icon="assignment">assignment</span>
+<span class="font-label-sm text-label-sm">Tasks</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 tap-highlight-transparent active:bg-secondary/20" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+<span class="font-label-sm text-label-sm">Calendar</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 tap-highlight-transparent active:bg-secondary/20" href="#">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+<span class="font-label-sm text-label-sm">Menu</span>
+</a>
+</nav>
+</body></html>

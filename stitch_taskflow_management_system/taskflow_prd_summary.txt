@@ -1,0 +1,20 @@
+# TaskFlow PRD Summary
+
+## Overview
+A serverless Task Management System (Next.js + Supabase) focused on delegation, tracking, and analytics.
+
+## Core Roles
+- **Manager:** Full CRUD on tasks, users, and job titles. Access to analytics dashboard.
+- **Member:** View assigned tasks, update subtask status, and add subtasks to assigned tasks.
+
+## Key Features
+- **Task/Subtask Hierarchy:** Structured delegation.
+- **Interactive Calendar:** Visual deadlines with "H-3" warning logic (special color for tasks due in <= 3 days).
+- **Manager Dashboard:** Real-time metrics (Active Tasks, Completed Subtasks, Overdue) and team workload visualization.
+- **User/Role Management:** Restricted access via RLS.
+
+## Design Guidelines
+- **Theme:** Monochrome/Dark mode dominant.
+- **Palette:** Primary (#ae8c68), Secondary (#4a484a).
+- **Aesthetic:** Minimalist, modern, elegant, spacious whitespace.
+- **Responsive:** Mobile-first approach for all components.
