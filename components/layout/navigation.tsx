@@ -183,7 +183,7 @@ function AccountMessage({ state }: { state: AccountActionState }) {
   return null;
 }
 
-function MobileProfileSheet({
+function ProfileSheet({
   profile,
   role,
   onClose
@@ -197,10 +197,10 @@ function MobileProfileSheet({
   const managerMode = role === "manager";
 
   return (
-    <div onClick={onClose} className="fixed inset-0 z-[70] bg-background/85 px-margin-mobile py-5 md:hidden">
+    <div onClick={onClose} className="fixed inset-0 z-[70] bg-background/85 px-margin-mobile py-5 md:px-margin-desktop md:py-8">
       <section
         onClick={(event) => event.stopPropagation()}
-        className="ml-auto flex max-h-full w-full max-w-sm flex-col overflow-hidden rounded-xl border border-secondary/20 bg-surface-container shadow-glow"
+        className="ml-auto flex max-h-full w-full max-w-sm flex-col overflow-hidden rounded-xl border border-secondary/20 bg-surface-container shadow-glow md:max-w-md"
         role="dialog"
         aria-modal="true"
         aria-label="User profile"
@@ -325,13 +325,27 @@ export function Navigation({ profile, role, isDemo }: NavigationProps) {
               Demo Mode
             </div>
           ) : null}
-          <div className="flex items-center gap-3">
-            <Avatar name={profile.name} />
-            <div className="min-w-0">
-              <div className="truncate text-label-md font-semibold text-on-surface">{profile.name}</div>
-              <div className="text-label-sm capitalize text-on-surface-variant">{profile.system_role}</div>
+          {role === "manager" ? (
+            <button
+              type="button"
+              onClick={() => setProfileOpen(true)}
+              className="flex w-full items-center gap-3 rounded-lg border border-secondary/10 bg-surface-container-lowest p-3 text-left transition-colors hover:border-primary/30 hover:bg-primary/10"
+            >
+              <Avatar name={profile.name} />
+              <div className="min-w-0">
+                <div className="truncate text-label-md font-semibold text-on-surface">{profile.name}</div>
+                <div className="text-label-sm text-primary">Account Settings</div>
+              </div>
+            </button>
+          ) : (
+            <div className="flex items-center gap-3">
+              <Avatar name={profile.name} />
+              <div className="min-w-0">
+                <div className="truncate text-label-md font-semibold text-on-surface">{profile.name}</div>
+                <div className="text-label-sm capitalize text-on-surface-variant">{profile.system_role}</div>
+              </div>
             </div>
-          </div>
+          )}
           <form action={signOut}>
             <button className="secondary-button flex w-full items-center justify-center gap-2 px-4 py-3 text-label-md">
               <LogOut className="h-4 w-4" />
@@ -369,7 +383,7 @@ export function Navigation({ profile, role, isDemo }: NavigationProps) {
       </nav>
 
       {pendingPath ? <RoutePendingOverlay /> : null}
-      {profileOpen ? <MobileProfileSheet profile={profile} role={role} onClose={() => setProfileOpen(false)} /> : null}
+      {profileOpen ? <ProfileSheet profile={profile} role={role} onClose={() => setProfileOpen(false)} /> : null}
     </>
   );
 }
