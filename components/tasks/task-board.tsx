@@ -80,10 +80,29 @@ function userLabel(user?: UserProfile | null) {
   return `${user.name}${user.is_active === false ? " (deleted)" : ""}`;
 }
 
-function assigneeOptionLabel(user: UserProfile) {
+function assigneeOptionLabel(user: UserProfile, currentUserId?: string) {
+  if (currentUserId && user.id === currentUserId) return `${user.name} (you)`;
   if (user.is_active === false) return `${user.name} (deleted)`;
-  if (user.system_role !== "member") return `${user.name} (holding)`;
+  if (user.system_role !== "member") return `${user.name} (manager)`;
   return user.name;
+}
+
+function getAssignableUsers(users: UserProfile[], currentUser: UserProfile) {
+  const options = users.filter((user) => (
+    user.is_active !== false &&
+    (user.system_role === "member" || user.id === currentUser.id)
+  ));
+
+  if (!options.some((user) => user.id === currentUser.id) && currentUser.system_role === "manager") {
+    return [currentUser, ...options];
+  }
+
+  return options;
+}
+
+function mergeAssigneeOptions(options: UserProfile[], currentAssignee?: UserProfile | null) {
+  if (!currentAssignee || options.some((option) => option.id === currentAssignee.id)) return options;
+  return [currentAssignee, ...options];
 }
 
 function timeInputValue(time: string) {
@@ -104,6 +123,14 @@ function formatCompletedAt(completedAt?: string | null) {
   });
 }
 
+function completionLabel(subtask: Subtask & { completed_by_user?: UserProfile | null }) {
+  const completedAt = formatCompletedAt(subtask.completed_at);
+  if (!completedAt) return null;
+
+  const completedBy = subtask.completed_by_user ? ` by ${userLabel(subtask.completed_by_user)}` : "";
+  return `Completed${completedBy} · ${completedAt}`;
+}
+
 function getEffectiveTaskStatus(task: Task & { subtasks: Subtask[] }): TaskStatus {
   if (task.status === "archived") return "archived";
   if (task.subtasks.length > 0 && task.subtasks.every((subtask) => subtask.is_completed)) return "completed";
@@ -112,16 +139,18 @@ function getEffectiveTaskStatus(task: Task & { subtasks: Subtask[] }): TaskStatu
 }
 
 function CreateTaskModal({
+  currentUser,
   users,
   onClose,
   onCreated
 }: {
+  currentUser: UserProfile;
   users: UserProfile[];
   onClose: () => void;
   onCreated: () => void;
 }) {
-  const members = users.filter((user) => user.system_role === "member" && user.is_active !== false);
-  const firstMember = members[0]?.id ?? "";
+  const assigneeOptions = getAssignableUsers(users, currentUser);
+  const firstAssignee = assigneeOptions[0]?.id ?? "";
   const [drafts, setDrafts] = useState<SubtaskDraft[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const submitLockedRef = useRef(false);
@@ -151,7 +180,7 @@ function CreateTaskModal({
       {
         key: crypto.randomUUID(),
         title: "",
-        assignedTo: firstMember,
+        assignedTo: firstAssignee,
         deadlineDate: "",
         deadlineTime: "09:00"
       }
@@ -252,9 +281,9 @@ function CreateTaskModal({
                         required
                         className="h-8 w-full cursor-pointer bg-transparent text-on-surface outline-none"
                       >
-                        {members.map((member) => (
-                          <option key={member.id} value={member.id} className="bg-surface text-on-surface">
-                            {member.name}
+                        {assigneeOptions.map((assignee) => (
+                          <option key={assignee.id} value={assignee.id} className="bg-surface text-on-surface">
+                            {assigneeOptionLabel(assignee, currentUser.id)}
                           </option>
                         ))}
                       </select>
@@ -289,7 +318,7 @@ function CreateTaskModal({
             <button
               type="button"
               onClick={addDraft}
-              disabled={!firstMember}
+              disabled={!firstAssignee}
               className="mt-5 inline-flex items-center gap-2 rounded px-2 py-2 text-label-md font-semibold text-primary disabled:cursor-not-allowed disabled:opacity-45"
             >
               <Plus className="h-4 w-4" />
@@ -328,7 +357,7 @@ function AddSubtaskForm({
   users: UserProfile[];
   onCreated: () => void;
 }) {
-  const members = users.filter((user) => user.system_role === "member" && user.is_active !== false);
+  const assigneeOptions = getAssignableUsers(users, currentUser);
   const managerMode = currentUser.system_role === "manager";
   const [submitting, setSubmitting] = useState(false);
   const submitLockedRef = useRef(false);
@@ -353,9 +382,9 @@ function AddSubtaskForm({
       <input name="title" required placeholder="Add subtask" className="input-surface px-3 py-2 text-label-md" />
       {managerMode ? (
         <select name="assigned_to" required className="input-surface min-h-[44px] cursor-pointer px-3 py-2 text-label-md">
-          {members.map((member) => (
-            <option key={member.id} value={member.id} className="bg-surface text-on-surface">
-              {member.name}
+          {assigneeOptions.map((assignee) => (
+            <option key={assignee.id} value={assignee.id} className="bg-surface text-on-surface">
+              {assigneeOptionLabel(assignee, currentUser.id)}
             </option>
           ))}
         </select>
@@ -374,21 +403,29 @@ function AddSubtaskForm({
 function DeleteTaskConfirmationModal({
   task,
   onClose,
+  onPendingChange,
   onDeleted
 }: {
   task: Task & { subtasks: Subtask[] };
   onClose: () => void;
+  onPendingChange?: (pending: boolean) => void;
   onDeleted: () => void;
 }) {
   const [submitting, setSubmitting] = useState(false);
+  const submitLockedRef = useRef(false);
 
   async function handleDelete(formData: FormData) {
+    if (submitLockedRef.current) return;
+    submitLockedRef.current = true;
     setSubmitting(true);
+    onPendingChange?.(true);
     try {
       await deleteTask(formData);
       onDeleted();
       onClose();
     } finally {
+      submitLockedRef.current = false;
+      onPendingChange?.(false);
       setSubmitting(false);
     }
   }
@@ -439,7 +476,14 @@ function DeleteTaskConfirmationModal({
           <p className="mt-1 text-label-md text-on-surface-variant">{task.subtasks.length} subtasks will be deleted</p>
         </div>
 
-        <form action={handleDelete} className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <form
+          action={handleDelete}
+          onSubmit={() => {
+            setSubmitting(true);
+            onPendingChange?.(true);
+          }}
+          className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
+        >
           <input type="hidden" name="id" value={task.id} />
           <button type="button" onClick={onClose} disabled={submitting} className="secondary-button px-5 py-3 text-label-md disabled:cursor-wait disabled:opacity-70">
             Cancel
@@ -561,20 +605,23 @@ function ArchiveTaskConfirmationModal({
 
 function ManagerSubtaskEditor({
   subtask,
+  currentUser,
   users,
+  isCompleting = false,
+  onComplete,
   onUpdated
 }: {
-  subtask: Subtask & { assignee?: UserProfile | null };
+  subtask: Subtask & { assignee?: UserProfile | null; completed_by_user?: UserProfile | null };
+  currentUser: UserProfile;
   users: UserProfile[];
+  isCompleting?: boolean;
+  onComplete: () => void;
   onUpdated: () => void;
 }) {
-  const members = users.filter((user) => user.system_role === "member" && user.is_active !== false);
-  const assigneeOptions = subtask.assignee && !members.some((member) => member.id === subtask.assignee?.id)
-    ? [subtask.assignee, ...members]
-    : members;
+  const assigneeOptions = mergeAssigneeOptions(getAssignableUsers(users, currentUser), subtask.assignee);
   const dueState = getDueState(subtask);
   const label = getDueLabel(subtask);
-  const completedAt = formatCompletedAt(subtask.completed_at);
+  const completedText = completionLabel(subtask);
   const [editing, setEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -599,21 +646,33 @@ function ManagerSubtaskEditor({
         )}
       >
         <div className="flex items-start gap-3">
-          <span
-            className={cn(
-              "mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded border border-secondary/35",
-              subtask.is_completed && "border-primary bg-primary text-on-primary"
-            )}
-          >
-            {subtask.is_completed ? <Check className="h-3 w-3" /> : null}
-          </span>
+          {subtask.is_completed ? (
+            <span
+              className={cn(
+                "mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded border border-secondary/35",
+                "border-primary bg-primary text-on-primary"
+              )}
+            >
+              <Check className="h-3 w-3" />
+            </span>
+          ) : (
+            <button
+              type="button"
+              disabled={isCompleting}
+              onClick={onComplete}
+              className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded border border-secondary/35 hover:border-primary hover:bg-primary/10 disabled:cursor-wait disabled:border-primary/60 disabled:bg-primary/10 disabled:opacity-80"
+              aria-label="Mark complete"
+            >
+              {isCompleting ? <LoaderCircle className="h-3 w-3 animate-spin text-primary" /> : null}
+            </button>
+          )}
           <div className="min-w-0">
             <p className={cn("truncate text-body-md font-semibold text-on-surface", subtask.is_completed && "text-on-surface-variant line-through opacity-60")}>
               {subtask.title}
             </p>
             <p className="mt-1 text-label-sm text-on-surface-variant">Assigned to {userLabel(subtask.assignee)}</p>
-            {completedAt ? (
-              <p className="mt-1 text-label-sm font-semibold text-primary">Completed {completedAt}</p>
+            {completedText ? (
+              <p className="mt-1 text-label-sm font-semibold text-primary">{completedText}</p>
             ) : null}
             {subtask.completion_notes ? (
               <p className="mt-2 max-w-3xl rounded-md border border-secondary/10 bg-surface-container-high/45 px-3 py-2 text-label-sm text-on-surface-variant">
@@ -678,7 +737,7 @@ function ManagerSubtaskEditor({
         >
           {assigneeOptions.map((assignee) => (
             <option key={assignee.id} value={assignee.id} className="bg-surface text-on-surface">
-              {assigneeOptionLabel(assignee)}
+              {assigneeOptionLabel(assignee, currentUser.id)}
             </option>
           ))}
         </select>
@@ -740,14 +799,14 @@ function SubtaskDisplayRow({
   isCompleting = false,
   onComplete
 }: {
-  subtask: Subtask & { assignee?: UserProfile | null };
+  subtask: Subtask & { assignee?: UserProfile | null; completed_by_user?: UserProfile | null };
   readOnly: boolean;
   isCompleting?: boolean;
   onComplete: () => void;
 }) {
   const dueState = getDueState(subtask);
   const label = getDueLabel(subtask);
-  const completedAt = formatCompletedAt(subtask.completed_at);
+  const completedText = completionLabel(subtask);
 
   return (
     <div
@@ -785,8 +844,8 @@ function SubtaskDisplayRow({
             {subtask.title}
           </p>
           <p className="mt-1 text-label-sm text-on-surface-variant">Assigned to {userLabel(subtask.assignee)}</p>
-          {completedAt ? (
-            <p className="mt-1 text-label-sm font-semibold text-primary">Completed {completedAt}</p>
+          {completedText ? (
+            <p className="mt-1 text-label-sm font-semibold text-primary">{completedText}</p>
           ) : null}
           {subtask.completion_notes ? (
             <p className="mt-2 max-w-3xl rounded-md border border-secondary/10 bg-surface-container-high/45 px-3 py-2 text-label-sm text-on-surface-variant">
@@ -822,6 +881,7 @@ export function TaskBoard({ currentUser, tasks, subtasks, users }: TaskBoardProp
   const [deleteTarget, setDeleteTarget] = useState<(Task & { subtasks: Subtask[] }) | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<{ task: Task & { subtasks: Subtask[] }; mode: "archive" | "unarchive" } | null>(null);
   const [completingSubtaskId, setCompletingSubtaskId] = useState<number | null>(null);
+  const [deletingTaskId, setDeletingTaskId] = useState<number | null>(null);
   const [archivePendingTarget, setArchivePendingTarget] = useState<{ taskId: number; mode: "archive" | "unarchive" } | null>(null);
   const [isPriorityPending, startPriorityTransition] = useTransition();
   const { toasts, showToast, dismissToast } = useToastQueue();
@@ -938,6 +998,7 @@ export function TaskBoard({ currentUser, tasks, subtasks, users }: TaskBoardProp
           const priority = priorityOverrides[task.id] ?? task.priority ?? "normal";
           const archiveButtonPending = archivePendingTarget?.taskId === task.id && archivePendingTarget.mode === "archive";
           const unarchiveButtonPending = archivePendingTarget?.taskId === task.id && archivePendingTarget.mode === "unarchive";
+          const deleteButtonPending = deletingTaskId === task.id;
           const taskCreator = users.find((user) => user.id === task.created_by);
 
           return (
@@ -1033,14 +1094,15 @@ export function TaskBoard({ currentUser, tasks, subtasks, users }: TaskBoardProp
                       ) : null}
                       <button
                         type="button"
+                        disabled={deleteButtonPending}
                         onClick={(event) => {
                           event.stopPropagation();
                           setDeleteTarget(task);
                         }}
-                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded text-on-surface-variant hover:bg-error/10 hover:text-error"
+                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded text-on-surface-variant hover:bg-error/10 hover:text-error disabled:cursor-wait disabled:bg-error/10 disabled:text-error disabled:opacity-70"
                         aria-label={`Delete ${task.title}`}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        {deleteButtonPending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                       </button>
                     </>
                   ) : null}
@@ -1057,7 +1119,10 @@ export function TaskBoard({ currentUser, tasks, subtasks, users }: TaskBoardProp
                       <ManagerSubtaskEditor
                         key={subtask.id}
                         subtask={subtask}
+                        currentUser={currentUser}
                         users={users}
+                        isCompleting={completingSubtaskId === subtask.id}
+                        onComplete={() => setCompleteTarget({ id: subtask.id, title: subtask.title, taskTitle: task.title })}
                         onUpdated={() => showToast("Subtask updated", subtask.title)}
                       />
                     );
@@ -1091,6 +1156,7 @@ export function TaskBoard({ currentUser, tasks, subtasks, users }: TaskBoardProp
 
       {modalOpen ? (
         <CreateTaskModal
+          currentUser={currentUser}
           users={users}
           onClose={() => setModalOpen(false)}
           onCreated={() => showToast("Task created")}
@@ -1100,6 +1166,9 @@ export function TaskBoard({ currentUser, tasks, subtasks, users }: TaskBoardProp
         <DeleteTaskConfirmationModal
           task={deleteTarget}
           onClose={() => setDeleteTarget(null)}
+          onPendingChange={(pending) => {
+            setDeletingTaskId(pending ? deleteTarget.id : null);
+          }}
           onDeleted={() => showToast("Task deleted", deleteTarget.title)}
         />
       ) : null}

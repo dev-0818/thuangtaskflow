@@ -834,7 +834,7 @@ export async function createSubtask(formData: FormData) {
 }
 
 export async function updateSubtask(formData: FormData) {
-  await requireManager();
+  const manager = await requireManager();
   const payload = z.object({
     id: z.coerce.number().int().positive(),
     title: requiredString,
@@ -854,7 +854,7 @@ export async function updateSubtask(formData: FormData) {
   const service = createSupabaseServiceClient();
   const { data: currentSubtask, error: currentError } = await service
     .from("subtasks")
-    .select("is_completed,completed_at,completion_notes")
+    .select("is_completed,completed_by,completed_at,completion_notes")
     .eq("id", payload.id)
     .single();
 
@@ -862,6 +862,9 @@ export async function updateSubtask(formData: FormData) {
 
   const completedAt = payload.is_completed
     ? currentSubtask.completed_at ?? new Date().toISOString()
+    : null;
+  const completedBy = payload.is_completed
+    ? currentSubtask.completed_by ?? manager.id
     : null;
 
   const { error } = await service
@@ -872,6 +875,7 @@ export async function updateSubtask(formData: FormData) {
       deadline_date: payload.deadline_date,
       deadline_time: payload.deadline_time,
       is_completed: payload.is_completed,
+      completed_by: completedBy,
       completed_at: completedAt,
       completion_notes: payload.is_completed ? currentSubtask.completion_notes ?? null : null
     })
@@ -913,6 +917,7 @@ export async function markSubtaskComplete(formData: FormData) {
     .from("subtasks")
     .update({
       is_completed: isCompleted,
+      completed_by: isCompleted ? profile.id : null,
       completed_at: isCompleted ? new Date().toISOString() : null,
       completion_notes: isCompleted ? completionNotes : null
     })

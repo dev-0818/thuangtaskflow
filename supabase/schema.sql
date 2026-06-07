@@ -70,10 +70,14 @@ create table if not exists public.subtasks (
   deadline_date date not null,
   deadline_time time not null,
   is_completed boolean default false not null,
+  completed_by uuid references public.users(id) null,
   completed_at timestamptz null,
   completion_notes text null,
   created_at timestamptz default now() not null
 );
+
+alter table public.subtasks
+add column if not exists completed_by uuid references public.users(id) null;
 
 alter table public.subtasks
 add column if not exists completed_at timestamptz null;
@@ -96,6 +100,7 @@ create index if not exists idx_tasks_created_by on public.tasks(created_by);
 create index if not exists idx_subtasks_task_id on public.subtasks(task_id);
 create index if not exists idx_subtasks_assigned_to on public.subtasks(assigned_to);
 create index if not exists idx_subtasks_assigned_by on public.subtasks(assigned_by);
+create index if not exists idx_subtasks_completed_by on public.subtasks(completed_by);
 create index if not exists idx_subtasks_deadline on public.subtasks(deadline_date, deadline_time);
 create index if not exists idx_subtasks_completed_at on public.subtasks(completed_at);
 
@@ -274,6 +279,7 @@ using (
 with check (
   assigned_to = auth.uid()
   and is_completed = true
+  and completed_by = auth.uid()
   and completed_at is not null
 );
 
@@ -286,7 +292,7 @@ grant select on public.master_job_titles to authenticated;
 grant select on public.users to authenticated;
 grant select on public.tasks to authenticated;
 grant select, insert on public.subtasks to authenticated;
-grant update (is_completed, completed_at, completion_notes) on public.subtasks to authenticated;
+grant update (is_completed, completed_by, completed_at, completion_notes) on public.subtasks to authenticated;
 
 grant usage, select on sequence public.master_job_titles_id_seq to authenticated;
 grant usage, select on sequence public.tasks_id_seq to authenticated;

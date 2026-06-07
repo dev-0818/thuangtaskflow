@@ -16,7 +16,10 @@ export function buildTaskTree(tasks: Task[], subtasks: Subtask[], users: UserPro
       .filter((subtask) => subtask.task_id === task.id)
       .map((subtask) => ({
         ...subtask,
-        assignee: users.find((user) => user.id === subtask.assigned_to) ?? null
+        assignee: users.find((user) => user.id === subtask.assigned_to) ?? null,
+        completed_by_user: subtask.completed_by
+          ? users.find((user) => user.id === subtask.completed_by) ?? null
+          : null
       }))
   }));
 }

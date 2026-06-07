@@ -44,13 +44,14 @@ export type Subtask = {
   deadline_date: string;
   deadline_time: string;
   is_completed: boolean;
+  completed_by?: string | null;
   completed_at?: string | null;
   completion_notes?: string | null;
   created_at: string;
 };
 
 export type TaskWithSubtasks = Task & {
-  subtasks: Array<Subtask & { assignee?: UserProfile | null }>;
+  subtasks: Array<Subtask & { assignee?: UserProfile | null; completed_by_user?: UserProfile | null }>;
 };
 
 export type UrgentItem = Subtask & {

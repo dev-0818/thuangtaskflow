@@ -161,6 +161,7 @@ export const demoSubtasks: Subtask[] = [
     deadline_date: date(5),
     deadline_time: "11:00:00",
     is_completed: true,
+    completed_by: demoUsers[1].id,
     completed_at: subDays(new Date(), 1).toISOString(),
     completion_notes: "Final assets uploaded for review.",
     created_at: subDays(new Date(), 8).toISOString()
@@ -221,6 +222,7 @@ export const demoSubtasks: Subtask[] = [
     deadline_date: date(-5),
     deadline_time: "10:00:00",
     is_completed: true,
+    completed_by: demoUsers[4].id,
     completed_at: subDays(new Date(), 4).toISOString(),
     completion_notes: "Spacing fix verified on mobile breakpoints.",
     created_at: subDays(new Date(), 16).toISOString()

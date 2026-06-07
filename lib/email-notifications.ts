@@ -7,6 +7,7 @@ const APP_NAME = "Thuang Tasks";
 type AssignedSubtaskNotification = {
   title: string;
   assigned_to: string;
+  assigned_by?: string | null;
   deadline_date: string;
   deadline_time: string;
 };
@@ -241,10 +242,11 @@ export async function notifyAssignedSubtasks(
   task: Task,
   subtasks: AssignedSubtaskNotification[]
 ) {
-  if (!getNotificationConfig() || subtasks.length === 0) return;
+  const notifiableSubtasks = subtasks.filter((subtask) => subtask.assigned_to !== subtask.assigned_by);
+  if (!getNotificationConfig() || notifiableSubtasks.length === 0) return;
 
   const notificationClient = client as NotificationClient;
-  const assigneeIds = [...new Set(subtasks.map((subtask) => subtask.assigned_to))];
+  const assigneeIds = [...new Set(notifiableSubtasks.map((subtask) => subtask.assigned_to))];
   const { data: assignees, error } = await notificationClient
     .from("users")
     .select("id,name,email,is_active")
@@ -262,7 +264,7 @@ export async function notifyAssignedSubtasks(
       const assignee = assigneeMap.get(assigneeId);
       if (!assignee?.email || assignee.is_active === false) return;
 
-      const assignedSubtasks = subtasks.filter((subtask) => subtask.assigned_to === assigneeId);
+      const assignedSubtasks = notifiableSubtasks.filter((subtask) => subtask.assigned_to === assigneeId);
       const subject = assignedSubtasks.length === 1
         ? `New subtask assigned: ${assignedSubtasks[0].title}`
         : `${assignedSubtasks.length} new subtasks assigned`;
