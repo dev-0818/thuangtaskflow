@@ -7,7 +7,7 @@ export default function SetupBlockedPage() {
         <ShieldAlert className="mx-auto mb-5 h-10 w-10 text-primary" />
         <h1 className="text-headline-md text-on-surface">Profile setup required</h1>
         <p className="mt-3 text-body-md text-on-surface-variant">
-          Your authenticated account does not have a TaskFlow profile yet. Ask a manager to complete your user record.
+          Your authenticated account does not have a Thuang Tasks profile yet. Ask a manager to complete your user record.
         </p>
       </section>
     </main>

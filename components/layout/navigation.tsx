@@ -301,7 +301,7 @@ export function Navigation({ profile, role, isDemo }: NavigationProps) {
     <>
       <nav className="fixed left-0 top-0 z-40 hidden h-full w-64 flex-col border-r border-secondary/20 bg-surface px-5 py-8 md:flex">
         <div className="mb-12">
-          <div className="text-headline-md font-semibold text-primary">TaskFlow</div>
+          <div className="text-headline-md font-semibold text-primary">Thuang Tasks</div>
           <div className="mt-1 text-label-sm uppercase tracking-[0.16em] text-on-surface-variant">
             {role === "manager" ? "Premium Workspace" : "Member Workspace"}
           </div>
@@ -357,7 +357,7 @@ export function Navigation({ profile, role, isDemo }: NavigationProps) {
 
       <nav className="fixed top-0 z-50 flex h-16 w-full items-center justify-between border-b border-secondary/20 bg-surface/80 px-margin-mobile backdrop-blur-xl md:hidden">
         <div>
-          <div className="text-body-lg font-semibold text-primary">TaskFlow</div>
+          <div className="text-body-lg font-semibold text-primary">Thuang Tasks</div>
           <div className="text-[11px] font-semibold capitalize leading-3 text-on-surface-variant">{role}</div>
         </div>
         <div className="flex items-center gap-4 text-on-surface-variant">

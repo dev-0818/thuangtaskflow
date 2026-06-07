@@ -5,7 +5,7 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import { AlertTriangle, Archive, CalendarDays, CheckCircle2, Plus, X } from "lucide-react";
+import { AlertTriangle, Archive, CalendarDays, CheckCircle2, PanelRightOpen, Plus, X } from "lucide-react";
 import Link from "next/link";
 import { Avatar } from "@/components/ui/avatar";
 import { GlassPanel } from "@/components/ui/glass-panel";
@@ -85,6 +85,7 @@ function getItemHour(item: Pick<Subtask, "deadline_time">) {
 export function CalendarBoard({ currentUser, tasks, subtasks, users }: CalendarBoardProps) {
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [selectedHour, setSelectedHour] = useState<string | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(true);
   const [mobile, setMobile] = useState(false);
 
   useEffect(() => {
@@ -117,6 +118,7 @@ export function CalendarBoard({ currentUser, tasks, subtasks, users }: CalendarB
     if (!selectedHour) return true;
     return getItemHour(item) === selectedHour;
   });
+  const taskDateKeys = useMemo(() => new Set(items.map((item) => item.deadline_date)), [items]);
   const selectedDateLabel = new Date(`${selectedDate}T00:00:00`).toLocaleDateString(undefined, {
     weekday: "short",
     month: "short",
@@ -145,15 +147,29 @@ export function CalendarBoard({ currentUser, tasks, subtasks, users }: CalendarB
             {items.length} tasks due, {items.filter((item) => item.dueState === "today" || item.dueState === "soon").length} urgent.
           </p>
         </div>
-        {currentUser.system_role === "manager" ? (
-          <Link href="/tasks" className="bronze-button inline-flex items-center justify-center gap-2 px-5 py-3 text-label-md">
-            <Plus className="h-4 w-4" />
-            New Task
-          </Link>
+        {!detailsOpen || currentUser.system_role === "manager" ? (
+          <div className="flex flex-col gap-3 sm:flex-row">
+            {!detailsOpen ? (
+              <button
+                type="button"
+                onClick={() => setDetailsOpen(true)}
+                className="secondary-button inline-flex items-center justify-center gap-2 px-5 py-3 text-label-md"
+              >
+                <PanelRightOpen className="h-4 w-4" />
+                Details
+              </button>
+            ) : null}
+            {currentUser.system_role === "manager" ? (
+              <Link href="/tasks" className="bronze-button inline-flex items-center justify-center gap-2 px-5 py-3 text-label-md">
+                <Plus className="h-4 w-4" />
+                New Task
+              </Link>
+            ) : null}
+          </div>
         ) : null}
       </header>
 
-      <section className="grid grid-cols-1 gap-gutter lg:grid-cols-[1fr_360px]">
+      <section className={`grid grid-cols-1 gap-gutter ${detailsOpen ? "lg:grid-cols-[minmax(0,1fr)_360px]" : ""}`}>
         <GlassPanel className="overflow-hidden p-3 md:p-5">
           <FullCalendar
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -166,7 +182,18 @@ export function CalendarBoard({ currentUser, tasks, subtasks, users }: CalendarB
             height={mobile ? "auto" : 720}
             events={eventSources}
             allDaySlot={false}
-            dayCellClassNames={(info) => (getDateKey(info.date) === selectedDate ? ["taskflow-selected-day"] : [])}
+            dayMaxEvents={3}
+            eventMaxStack={1}
+            eventMinHeight={28}
+            eventShortHeight={28}
+            slotEventOverlap={false}
+            dayCellClassNames={(info) => {
+              const dateKey = getDateKey(info.date);
+              return [
+                dateKey === selectedDate ? "taskflow-selected-day" : "",
+                taskDateKeys.has(dateKey) ? "taskflow-has-tasks" : ""
+              ].filter(Boolean);
+            }}
             dayHeaderClassNames={(info) => (getDateKey(info.date) === selectedDate ? ["taskflow-selected-day-header"] : [])}
             eventClick={(info) => {
               const start = info.event.start;
@@ -174,10 +201,12 @@ export function CalendarBoard({ currentUser, tasks, subtasks, users }: CalendarB
 
               setSelectedDate(getDateKey(start));
               setSelectedHour(info.view.type.startsWith("timeGrid") ? getHourKey(start) : null);
+              setDetailsOpen(true);
             }}
             dateClick={(info) => {
               setSelectedDate(getDateKey(info.date));
               setSelectedHour(info.view.type.startsWith("timeGrid") && !info.allDay ? getHourKey(info.date) : null);
+              setDetailsOpen(true);
             }}
             eventContent={(info) => {
               const taskStatus = info.event.extendedProps.taskStatus as Task["status"] | undefined;
@@ -196,6 +225,7 @@ export function CalendarBoard({ currentUser, tasks, subtasks, users }: CalendarB
           />
         </GlassPanel>
 
+        {detailsOpen ? (
         <GlassPanel className="p-5">
           <div className="mb-5 flex items-start justify-between gap-4">
             <div>
@@ -211,12 +241,9 @@ export function CalendarBoard({ currentUser, tasks, subtasks, users }: CalendarB
             </div>
             <button
               type="button"
-              onClick={() => {
-                setSelectedDate(new Date().toISOString().slice(0, 10));
-                setSelectedHour(null);
-              }}
+              onClick={() => setDetailsOpen(false)}
               className="rounded p-2 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
-              aria-label="Reset selected date"
+              aria-label="Close details panel"
             >
               <X className="h-5 w-5" />
             </button>
@@ -255,6 +282,7 @@ export function CalendarBoard({ currentUser, tasks, subtasks, users }: CalendarB
             )}
           </div>
         </GlassPanel>
+        ) : null}
       </section>
     </div>
   );

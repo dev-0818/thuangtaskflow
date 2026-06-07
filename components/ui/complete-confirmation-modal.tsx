@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, CheckCircle2, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, LoaderCircle, X } from "lucide-react";
 import { markSubtaskComplete } from "@/app/actions";
 
 type CompleteConfirmationModalProps = {
@@ -9,6 +9,7 @@ type CompleteConfirmationModalProps = {
   title: string;
   contextLabel?: string;
   onClose: () => void;
+  onPendingChange?: (pending: boolean) => void;
   onCompleted?: () => void;
 };
 
@@ -17,24 +18,30 @@ export function CompleteConfirmationModal({
   title,
   contextLabel,
   onClose,
+  onPendingChange,
   onCompleted
 }: CompleteConfirmationModalProps) {
   const [submitting, setSubmitting] = useState(false);
 
   async function handleComplete(formData: FormData) {
     setSubmitting(true);
+    onPendingChange?.(true);
+
     try {
       await markSubtaskComplete(formData);
       onCompleted?.();
       onClose();
     } finally {
+      onPendingChange?.(false);
       setSubmitting(false);
     }
   }
 
   return (
     <div
-      onClick={onClose}
+      onClick={() => {
+        if (!submitting) onClose();
+      }}
       className="fixed inset-0 z-[70] flex items-center justify-center bg-background/85 p-margin-mobile"
       role="presentation"
     >
@@ -59,7 +66,13 @@ export function CompleteConfirmationModal({
               </p>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="rounded p-2 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface" aria-label="Close confirmation">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={submitting}
+            className="rounded p-2 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface disabled:cursor-wait disabled:opacity-60"
+            aria-label="Close confirmation"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -72,7 +85,14 @@ export function CompleteConfirmationModal({
           ) : null}
         </div>
 
-        <form action={handleComplete} className="mt-6 space-y-5">
+        <form
+          action={handleComplete}
+          onSubmit={() => {
+            setSubmitting(true);
+            onPendingChange?.(true);
+          }}
+          className="mt-6 space-y-5"
+        >
           <input type="hidden" name="id" value={subtaskId} />
           <input type="hidden" name="is_completed" value="true" />
           <label className="block text-left">
@@ -80,16 +100,17 @@ export function CompleteConfirmationModal({
             <textarea
               name="completion_notes"
               rows={4}
+              disabled={submitting}
               placeholder="Add notes about what was completed..."
-              className="input-surface resize-none px-4 py-3 text-label-md"
+              className="input-surface resize-none px-4 py-3 text-label-md disabled:cursor-wait disabled:opacity-70"
             />
           </label>
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <button type="button" onClick={onClose} className="secondary-button px-5 py-3 text-label-md">
+            <button type="button" onClick={onClose} disabled={submitting} className="secondary-button px-5 py-3 text-label-md disabled:cursor-wait disabled:opacity-70">
               Cancel
             </button>
             <button disabled={submitting} className="bronze-button inline-flex items-center justify-center gap-2 px-5 py-3 text-label-md disabled:cursor-wait disabled:opacity-70">
-              <CheckCircle2 className="h-4 w-4" />
+              {submitting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
               {submitting ? "Completing..." : "Complete"}
             </button>
           </div>

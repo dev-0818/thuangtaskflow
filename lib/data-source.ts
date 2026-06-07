@@ -41,6 +41,7 @@ export const getWorkspaceData = cache(async function getWorkspaceData(): Promise
 
   if (profileError) throw profileError;
   if (!currentProfile) redirect("/setup-blocked");
+  if ((currentProfile as UserProfile).is_active === false) redirect("/login");
 
   const [usersResult, titlesResult, tasksResult, subtasksResult] = await Promise.all([
     supabase.from("users").select("*").order("created_at", { ascending: true }),

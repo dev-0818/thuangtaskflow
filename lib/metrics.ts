@@ -63,7 +63,7 @@ export function getUrgentItems(
 
 export function getTeamWorkload(users: UserProfile[], subtasks: Subtask[]): TeamWorkload[] {
   return users
-    .filter((user) => user.system_role === "member")
+    .filter((user) => user.system_role === "member" && user.is_active !== false)
     .map((user) => ({
       user,
       active_subtasks: subtasks.filter((subtask) => subtask.assigned_to === user.id && !subtask.is_completed).length,

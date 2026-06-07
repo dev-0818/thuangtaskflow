@@ -59,13 +59,21 @@ export async function middleware(request: NextRequest) {
   if (user && isProtected) {
     const { data: profile } = await supabase
       .from("users")
-      .select("system_role")
+      .select("system_role,is_active")
       .eq("id", user.id)
       .maybeSingle();
 
     if (!profile) {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = "/setup-blocked";
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    if (profile.is_active === false) {
+      await supabase.auth.signOut();
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = "/login";
+      redirectUrl.searchParams.set("disabled", "1");
       return NextResponse.redirect(redirectUrl);
     }
 

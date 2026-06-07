@@ -9,6 +9,7 @@ import {
   Clock,
   ClipboardList,
   Flag,
+  LoaderCircle,
   PencilLine,
   Plus,
   RotateCcw,
@@ -74,6 +75,17 @@ function priorityClass(priority: TaskPriority) {
   return "text-primary";
 }
 
+function userLabel(user?: UserProfile | null) {
+  if (!user) return "Unassigned";
+  return `${user.name}${user.is_active === false ? " (deleted)" : ""}`;
+}
+
+function assigneeOptionLabel(user: UserProfile) {
+  if (user.is_active === false) return `${user.name} (deleted)`;
+  if (user.system_role !== "member") return `${user.name} (holding)`;
+  return user.name;
+}
+
 function timeInputValue(time: string) {
   return time.length >= 5 ? time.slice(0, 5) : time;
 }
@@ -108,7 +120,7 @@ function CreateTaskModal({
   onClose: () => void;
   onCreated: () => void;
 }) {
-  const members = users.filter((user) => user.system_role === "member");
+  const members = users.filter((user) => user.system_role === "member" && user.is_active !== false);
   const firstMember = members[0]?.id ?? "";
   const [drafts, setDrafts] = useState<SubtaskDraft[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -316,7 +328,7 @@ function AddSubtaskForm({
   users: UserProfile[];
   onCreated: () => void;
 }) {
-  const members = users.filter((user) => user.system_role === "member");
+  const members = users.filter((user) => user.system_role === "member" && user.is_active !== false);
   const managerMode = currentUser.system_role === "manager";
   const [submitting, setSubmitting] = useState(false);
   const submitLockedRef = useRef(false);
@@ -383,7 +395,9 @@ function DeleteTaskConfirmationModal({
 
   return (
     <div
-      onClick={onClose}
+      onClick={() => {
+        if (!submitting) onClose();
+      }}
       className="fixed inset-0 z-[70] flex items-center justify-center bg-background/85 p-margin-mobile"
       role="presentation"
     >
@@ -408,7 +422,13 @@ function DeleteTaskConfirmationModal({
               </p>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="rounded p-2 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface" aria-label="Close delete confirmation">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={submitting}
+            className="rounded p-2 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface disabled:cursor-wait disabled:opacity-60"
+            aria-label="Close delete confirmation"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -421,11 +441,11 @@ function DeleteTaskConfirmationModal({
 
         <form action={handleDelete} className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <input type="hidden" name="id" value={task.id} />
-          <button type="button" onClick={onClose} className="secondary-button px-5 py-3 text-label-md">
+          <button type="button" onClick={onClose} disabled={submitting} className="secondary-button px-5 py-3 text-label-md disabled:cursor-wait disabled:opacity-70">
             Cancel
           </button>
           <button disabled={submitting} className="inline-flex items-center justify-center gap-2 rounded-lg border border-error/35 bg-error/15 px-5 py-3 text-label-md font-semibold text-error hover:bg-error/20 disabled:cursor-wait disabled:opacity-70">
-            <Trash2 className="h-4 w-4" />
+            {submitting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
             {submitting ? "Deleting..." : "Delete"}
           </button>
         </form>
@@ -438,11 +458,13 @@ function ArchiveTaskConfirmationModal({
   task,
   mode,
   onClose,
+  onPendingChange,
   onDone
 }: {
   task: Task & { subtasks: Subtask[] };
   mode: "archive" | "unarchive";
   onClose: () => void;
+  onPendingChange?: (pending: boolean) => void;
   onDone: () => void;
 }) {
   const [submitting, setSubmitting] = useState(false);
@@ -450,6 +472,8 @@ function ArchiveTaskConfirmationModal({
 
   async function handleSubmit(formData: FormData) {
     setSubmitting(true);
+    onPendingChange?.(true);
+
     try {
       if (isArchive) {
         await archiveTask(formData);
@@ -460,13 +484,16 @@ function ArchiveTaskConfirmationModal({
       onDone();
       onClose();
     } finally {
+      onPendingChange?.(false);
       setSubmitting(false);
     }
   }
 
   return (
     <div
-      onClick={onClose}
+      onClick={() => {
+        if (!submitting) onClose();
+      }}
       className="fixed inset-0 z-[70] flex items-center justify-center bg-background/85 p-margin-mobile"
       role="presentation"
     >
@@ -493,7 +520,13 @@ function ArchiveTaskConfirmationModal({
               </p>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="rounded p-2 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface" aria-label="Close archive confirmation">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={submitting}
+            className="rounded p-2 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface disabled:cursor-wait disabled:opacity-60"
+            aria-label="Close archive confirmation"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -504,14 +537,21 @@ function ArchiveTaskConfirmationModal({
           <p className="mt-1 text-label-md text-on-surface-variant">{task.subtasks.length} subtasks</p>
         </div>
 
-        <form action={handleSubmit} className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <form
+          action={handleSubmit}
+          onSubmit={() => {
+            setSubmitting(true);
+            onPendingChange?.(true);
+          }}
+          className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
+        >
           <input type="hidden" name="id" value={task.id} />
-          <button type="button" onClick={onClose} className="secondary-button px-5 py-3 text-label-md">
+          <button type="button" onClick={onClose} disabled={submitting} className="secondary-button px-5 py-3 text-label-md disabled:cursor-wait disabled:opacity-70">
             Cancel
           </button>
           <button disabled={submitting} className="bronze-button inline-flex items-center justify-center gap-2 px-5 py-3 text-label-md disabled:cursor-wait disabled:opacity-70">
-            {isArchive ? <Archive className="h-4 w-4" /> : <RotateCcw className="h-4 w-4" />}
-            {submitting ? (isArchive ? "Archiving..." : "Restoring...") : isArchive ? "Archive" : "Unarchive"}
+            {submitting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : isArchive ? <Archive className="h-4 w-4" /> : <RotateCcw className="h-4 w-4" />}
+            {submitting ? (isArchive ? "Archiving..." : "Unarchiving...") : isArchive ? "Archive" : "Unarchive"}
           </button>
         </form>
       </section>
@@ -528,7 +568,10 @@ function ManagerSubtaskEditor({
   users: UserProfile[];
   onUpdated: () => void;
 }) {
-  const members = users.filter((user) => user.system_role === "member");
+  const members = users.filter((user) => user.system_role === "member" && user.is_active !== false);
+  const assigneeOptions = subtask.assignee && !members.some((member) => member.id === subtask.assignee?.id)
+    ? [subtask.assignee, ...members]
+    : members;
   const dueState = getDueState(subtask);
   const label = getDueLabel(subtask);
   const completedAt = formatCompletedAt(subtask.completed_at);
@@ -568,7 +611,7 @@ function ManagerSubtaskEditor({
             <p className={cn("truncate text-body-md font-semibold text-on-surface", subtask.is_completed && "text-on-surface-variant line-through opacity-60")}>
               {subtask.title}
             </p>
-            <p className="mt-1 text-label-sm text-on-surface-variant">Assigned to {subtask.assignee?.name ?? "Unassigned"}</p>
+            <p className="mt-1 text-label-sm text-on-surface-variant">Assigned to {userLabel(subtask.assignee)}</p>
             {completedAt ? (
               <p className="mt-1 text-label-sm font-semibold text-primary">Completed {completedAt}</p>
             ) : null}
@@ -633,9 +676,9 @@ function ManagerSubtaskEditor({
           required
           className="input-surface min-h-[44px] cursor-pointer px-3 py-2 text-label-md"
         >
-          {members.map((member) => (
-            <option key={member.id} value={member.id} className="bg-surface text-on-surface">
-              {member.name}
+          {assigneeOptions.map((assignee) => (
+            <option key={assignee.id} value={assignee.id} className="bg-surface text-on-surface">
+              {assigneeOptionLabel(assignee)}
             </option>
           ))}
         </select>
@@ -694,10 +737,12 @@ function ManagerSubtaskEditor({
 function SubtaskDisplayRow({
   subtask,
   readOnly,
+  isCompleting = false,
   onComplete
 }: {
   subtask: Subtask & { assignee?: UserProfile | null };
   readOnly: boolean;
+  isCompleting?: boolean;
   onComplete: () => void;
 }) {
   const dueState = getDueState(subtask);
@@ -727,16 +772,19 @@ function SubtaskDisplayRow({
         ) : (
           <button
             type="button"
+            disabled={isCompleting}
             onClick={onComplete}
-            className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded border border-secondary/35 hover:border-primary hover:bg-primary/10"
+            className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded border border-secondary/35 hover:border-primary hover:bg-primary/10 disabled:cursor-wait disabled:border-primary/60 disabled:bg-primary/10 disabled:opacity-80"
             aria-label="Mark complete"
-          />
+          >
+            {isCompleting ? <LoaderCircle className="h-3 w-3 animate-spin text-primary" /> : null}
+          </button>
         )}
         <div className="min-w-0">
           <p className={cn("text-body-md font-semibold text-on-surface", subtask.is_completed && "text-on-surface-variant line-through opacity-60")}>
             {subtask.title}
           </p>
-          <p className="mt-1 text-label-sm text-on-surface-variant">Assigned to {subtask.assignee?.name ?? "Unassigned"}</p>
+          <p className="mt-1 text-label-sm text-on-surface-variant">Assigned to {userLabel(subtask.assignee)}</p>
           {completedAt ? (
             <p className="mt-1 text-label-sm font-semibold text-primary">Completed {completedAt}</p>
           ) : null}
@@ -773,6 +821,8 @@ export function TaskBoard({ currentUser, tasks, subtasks, users }: TaskBoardProp
   const [completeTarget, setCompleteTarget] = useState<{ id: number; title: string; taskTitle: string } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<(Task & { subtasks: Subtask[] }) | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<{ task: Task & { subtasks: Subtask[] }; mode: "archive" | "unarchive" } | null>(null);
+  const [completingSubtaskId, setCompletingSubtaskId] = useState<number | null>(null);
+  const [archivePendingTarget, setArchivePendingTarget] = useState<{ taskId: number; mode: "archive" | "unarchive" } | null>(null);
   const [isPriorityPending, startPriorityTransition] = useTransition();
   const { toasts, showToast, dismissToast } = useToastQueue();
   const taskTree = useMemo(() => buildTaskTree(tasks, subtasks, users), [tasks, subtasks, users]);
@@ -886,6 +936,9 @@ export function TaskBoard({ currentUser, tasks, subtasks, users }: TaskBoardProp
           const isArchived = taskStatus === "archived";
           const expanded = expandedTaskIds.has(task.id);
           const priority = priorityOverrides[task.id] ?? task.priority ?? "normal";
+          const archiveButtonPending = archivePendingTarget?.taskId === task.id && archivePendingTarget.mode === "archive";
+          const unarchiveButtonPending = archivePendingTarget?.taskId === task.id && archivePendingTarget.mode === "unarchive";
+          const taskCreator = users.find((user) => user.id === task.created_by);
 
           return (
           <GlassPanel key={task.id} className="task-card-viewport overflow-hidden">
@@ -918,6 +971,10 @@ export function TaskBoard({ currentUser, tasks, subtasks, users }: TaskBoardProp
                         <Flag className="h-4 w-4" />
                         {priorityLabel(priority)}
                       </span>
+                      <span className="inline-flex items-center gap-2">
+                        <UserRound className="h-4 w-4" />
+                        Created by {userLabel(taskCreator)}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -947,44 +1004,44 @@ export function TaskBoard({ currentUser, tasks, subtasks, users }: TaskBoardProp
                       {taskStatus === "completed" ? (
                         <button
                           type="button"
+                          disabled={archiveButtonPending}
                           onClick={(event) => {
                             event.stopPropagation();
-                          setArchiveTarget({ task, mode: "archive" });
+                            setArchiveTarget({ task, mode: "archive" });
                           }}
-                          className="secondary-button inline-flex min-h-[38px] shrink-0 items-center gap-2 px-3 py-2 text-label-sm"
+                          className="secondary-button inline-flex min-h-[38px] shrink-0 items-center gap-2 px-3 py-2 text-label-sm disabled:cursor-wait disabled:opacity-70"
                           aria-label={`Archive ${task.title}`}
                         >
-                          <Archive className="h-4 w-4" />
-                          Archive
+                          {archiveButtonPending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Archive className="h-4 w-4" />}
+                          {archiveButtonPending ? "Archiving..." : "Archive"}
                         </button>
                       ) : null}
                       {taskStatus === "archived" ? (
                         <button
                           type="button"
+                          disabled={unarchiveButtonPending}
                           onClick={(event) => {
                             event.stopPropagation();
-                          setArchiveTarget({ task, mode: "unarchive" });
+                            setArchiveTarget({ task, mode: "unarchive" });
                           }}
-                          className="secondary-button inline-flex min-h-[38px] shrink-0 items-center gap-2 px-3 py-2 text-label-sm"
+                          className="secondary-button inline-flex min-h-[38px] shrink-0 items-center gap-2 px-3 py-2 text-label-sm disabled:cursor-wait disabled:opacity-70"
                           aria-label={`Unarchive ${task.title}`}
                         >
-                          <RotateCcw className="h-4 w-4" />
-                          Unarchive
+                          {unarchiveButtonPending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+                          {unarchiveButtonPending ? "Unarchiving..." : "Unarchive"}
                         </button>
                       ) : null}
-                      {!isArchived ? (
-                        <button
-                          type="button"
-                          onClick={(event) => {
+                      <button
+                        type="button"
+                        onClick={(event) => {
                           event.stopPropagation();
                           setDeleteTarget(task);
                         }}
-                          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded text-on-surface-variant hover:bg-error/10 hover:text-error"
-                          aria-label="Delete task"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      ) : null}
+                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded text-on-surface-variant hover:bg-error/10 hover:text-error"
+                        aria-label={`Delete ${task.title}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </>
                   ) : null}
                 </div>
@@ -1011,6 +1068,7 @@ export function TaskBoard({ currentUser, tasks, subtasks, users }: TaskBoardProp
                       key={subtask.id}
                       subtask={subtask}
                       readOnly={isArchived || role === "manager"}
+                      isCompleting={completingSubtaskId === subtask.id}
                       onComplete={() => setCompleteTarget({ id: subtask.id, title: subtask.title, taskTitle: task.title })}
                     />
                   );
@@ -1050,6 +1108,9 @@ export function TaskBoard({ currentUser, tasks, subtasks, users }: TaskBoardProp
           task={archiveTarget.task}
           mode={archiveTarget.mode}
           onClose={() => setArchiveTarget(null)}
+          onPendingChange={(pending) => {
+            setArchivePendingTarget(pending ? { taskId: archiveTarget.task.id, mode: archiveTarget.mode } : null);
+          }}
           onDone={() => showToast(archiveTarget.mode === "archive" ? "Task archived" : "Task unarchived", archiveTarget.task.title)}
         />
       ) : null}
@@ -1059,6 +1120,9 @@ export function TaskBoard({ currentUser, tasks, subtasks, users }: TaskBoardProp
           title={completeTarget.title}
           contextLabel={`Parent: ${completeTarget.taskTitle}`}
           onClose={() => setCompleteTarget(null)}
+          onPendingChange={(pending) => {
+            setCompletingSubtaskId(pending ? completeTarget.id : null);
+          }}
           onCompleted={() => showToast("Subtask completed", completeTarget.title)}
         />
       ) : null}

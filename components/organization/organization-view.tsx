@@ -1,11 +1,13 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { useFormStatus } from "react-dom";
 import {
-  Badge,
+  AlertTriangle,
   Eye,
   Filter,
   KeyRound,
+  LoaderCircle,
   Mail,
   Plus,
   Search,
@@ -31,20 +33,177 @@ type RoleFilter = "all" | "manager" | "member";
 type PermissionFilter = "all" | "can_add" | "cannot_add";
 type MemberSort = "name_asc" | "name_desc" | "created_desc" | "created_asc" | "title_asc";
 
+function PermissionToggle({
+  defaultChecked,
+  activeLabel,
+  inactiveLabel
+}: {
+  defaultChecked: boolean;
+  activeLabel: string;
+  inactiveLabel: string;
+}) {
+  const { pending } = useFormStatus();
+
+  return (
+    <label className={`flex items-center justify-between gap-4 ${pending ? "cursor-wait opacity-75" : "cursor-pointer"}`}>
+      <span>
+        <span className="block text-label-md font-semibold text-on-surface">Can add subtasks</span>
+        <span className="text-label-sm text-on-surface-variant">
+          {pending ? "Updating..." : defaultChecked ? activeLabel : inactiveLabel}
+        </span>
+      </span>
+      <input
+        name="can_add_subtasks"
+        type="checkbox"
+        defaultChecked={defaultChecked}
+        disabled={pending}
+        onChange={(event) => event.currentTarget.form?.requestSubmit()}
+        className="h-5 w-5 cursor-pointer accent-primary disabled:cursor-wait disabled:opacity-70"
+      />
+    </label>
+  );
+}
+
+function DeleteMemberTriggerButton({
+  name,
+  detail = false,
+  onClick
+}: {
+  name: string;
+  detail?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        detail
+          ? "secondary-button inline-flex w-full items-center justify-center gap-2 border-error/30 px-4 py-3 text-label-md text-error sm:w-auto"
+          : "rounded border border-error/25 bg-error/10 p-3 text-error hover:bg-error/15"
+      }
+      aria-label={`Delete ${name}`}
+    >
+      <Trash2 className={detail ? "h-4 w-4" : "h-5 w-5"} />
+      {detail ? "Delete Account" : <span className="sr-only">Delete</span>}
+    </button>
+  );
+}
+
+function UpdatePasswordButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <button disabled={pending} className="bronze-button mt-3 inline-flex min-h-[44px] w-full items-center justify-center gap-2 px-4 py-3 text-label-md disabled:cursor-wait disabled:opacity-70">
+      {pending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+      {pending ? "Updating..." : "Update Password"}
+    </button>
+  );
+}
+
+function DeleteMemberConfirmationModal({
+  member,
+  onClose,
+  onDelete
+}: {
+  member: UserProfile;
+  onClose: () => void;
+  onDelete: (formData: FormData) => Promise<void>;
+}) {
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleDelete(formData: FormData) {
+    setSubmitting(true);
+
+    try {
+      await onDelete(formData);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div
+      onClick={() => {
+        if (!submitting) onClose();
+      }}
+      className="fixed inset-0 z-[80] flex items-center justify-center bg-background/85 p-margin-mobile"
+      role="presentation"
+    >
+      <section
+        onClick={(event) => event.stopPropagation()}
+        className="glass-panel w-full max-w-md rounded-xl p-6 shadow-glow"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-member-title"
+      >
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-error/30 bg-error/10 text-error">
+              <AlertTriangle className="h-5 w-5" />
+            </span>
+            <div>
+              <h2 id="delete-member-title" className="text-headline-md font-semibold text-on-surface">
+                Delete Team Member?
+              </h2>
+              <p className="mt-2 text-body-md text-on-surface-variant">
+                This disables account access, while existing tasks and subtasks stay visible with this member in the history.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={submitting}
+            className="rounded p-2 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface disabled:cursor-wait disabled:opacity-60"
+            aria-label="Close delete member confirmation"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="rounded-lg border border-secondary/10 bg-surface-container-lowest p-4">
+          <p className="text-label-sm font-semibold uppercase text-on-surface-variant">Member</p>
+          <p className="mt-2 text-body-md font-semibold text-on-surface">{member.name}</p>
+          <p className="mt-1 break-all text-label-md text-on-surface-variant">{member.email ?? "No email"}</p>
+        </div>
+
+        <form
+          action={handleDelete}
+          onSubmit={() => setSubmitting(true)}
+          className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
+        >
+          <input type="hidden" name="id" value={member.id} />
+          <input type="hidden" name="member_name" value={member.name} />
+          <button type="button" onClick={onClose} disabled={submitting} className="secondary-button px-5 py-3 text-label-md disabled:cursor-wait disabled:opacity-70">
+            Cancel
+          </button>
+          <button disabled={submitting} className="inline-flex items-center justify-center gap-2 rounded-lg border border-error/35 bg-error/15 px-5 py-3 text-label-md font-semibold text-error hover:bg-error/20 disabled:cursor-wait disabled:opacity-70">
+            {submitting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            {submitting ? "Deleting..." : "Delete Member"}
+          </button>
+        </form>
+      </section>
+    </div>
+  );
+}
+
 export function OrganizationView({ currentUser, users, jobTitles }: OrganizationViewProps) {
-  const [activeTab, setActiveTab] = useState<"members" | "titles">("members");
   const [query, setQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [permissionFilter, setPermissionFilter] = useState<PermissionFilter>("all");
   const [sortBy, setSortBy] = useState<MemberSort>("name_asc");
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<UserProfile | null>(null);
   const [registerOpen, setRegisterOpen] = useState(false);
+  const [registerError, setRegisterError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const registerLockedRef = useRef(false);
   const { toasts, showToast, dismissToast } = useToastQueue();
-  const managers = users.filter((user) => user.system_role === "manager");
-  const members = users.filter((user) => user.id !== currentUser.id);
+  const activeUsers = users.filter((user) => user.is_active !== false);
+  const managers = activeUsers.filter((user) => user.system_role === "manager");
+  const members = activeUsers.filter((user) => user.id !== currentUser.id);
   const filteredMembers = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
@@ -76,12 +235,17 @@ export function OrganizationView({ currentUser, users, jobTitles }: Organization
     if (registerLockedRef.current) return;
     registerLockedRef.current = true;
     setSubmitting(true);
+    setRegisterError(null);
 
     try {
       await inviteMember(formData);
       formRef.current?.reset();
-      showToast("Team member created", String(formData.get("name") ?? ""));
+      showToast("Team member saved", String(formData.get("name") ?? ""));
       setRegisterOpen(false);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Team member registration failed.";
+      setRegisterError(message);
+      showToast("Registration failed", message, "error");
     } finally {
       registerLockedRef.current = false;
       setSubmitting(false);
@@ -100,7 +264,8 @@ export function OrganizationView({ currentUser, users, jobTitles }: Organization
 
   async function handleDeleteMember(formData: FormData) {
     await deleteMember(formData);
-    showToast("Team member deleted", String(formData.get("member_name") ?? ""));
+    showToast("Team member disabled", String(formData.get("member_name") ?? ""));
+    setDeleteTarget(null);
     setSelectedUser(null);
   }
 
@@ -123,7 +288,10 @@ export function OrganizationView({ currentUser, users, jobTitles }: Organization
         </div>
         <button
           type="button"
-          onClick={() => setRegisterOpen(true)}
+          onClick={() => {
+            setRegisterError(null);
+            setRegisterOpen(true);
+          }}
           className="bronze-button inline-flex min-h-[48px] items-center justify-center gap-2 px-5 py-3 text-label-md"
         >
           <Plus className="h-4 w-4" />
@@ -131,23 +299,6 @@ export function OrganizationView({ currentUser, users, jobTitles }: Organization
         </button>
       </header>
 
-      <div className="mb-8 flex border-b border-secondary/15">
-        <button
-          onClick={() => setActiveTab("members")}
-          className={`border-b-2 px-0 py-4 pr-8 text-label-md font-semibold ${activeTab === "members" ? "border-primary text-primary" : "border-transparent text-on-surface-variant"}`}
-        >
-          Team Members
-        </button>
-        <button
-          onClick={() => setActiveTab("titles")}
-          className={`border-b-2 px-0 py-4 text-label-md font-semibold ${activeTab === "titles" ? "border-primary text-primary" : "border-transparent text-on-surface-variant"}`}
-        >
-          Job Titles
-        </button>
-      </div>
-
-      {activeTab === "members" ? (
-        <>
           <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <label className="input-surface flex max-w-xl items-center gap-3 px-4 py-3">
               <Search className="h-5 w-5 text-on-surface-variant" />
@@ -238,21 +389,11 @@ export function OrganizationView({ currentUser, users, jobTitles }: Organization
                     <form action={handleUpdatePermission} className="mt-5 rounded-lg border border-secondary/10 bg-surface-container-lowest p-4">
                       <input type="hidden" name="id" value={user.id} />
                       <input type="hidden" name="member_name" value={user.name} />
-                      <label className="flex cursor-pointer items-center justify-between gap-4">
-                        <span>
-                          <span className="block text-label-md font-semibold text-on-surface">Can add subtasks</span>
-                          <span className="text-label-sm text-on-surface-variant">
-                            {user.can_add_subtasks ? "Enabled" : "Disabled"}
-                          </span>
-                        </span>
-                        <input
-                          name="can_add_subtasks"
-                          type="checkbox"
-                          defaultChecked={user.can_add_subtasks}
-                          onChange={(event) => event.currentTarget.form?.requestSubmit()}
-                          className="h-5 w-5 cursor-pointer accent-primary"
-                        />
-                      </label>
+                      <PermissionToggle
+                        defaultChecked={user.can_add_subtasks}
+                        activeLabel="Enabled"
+                        inactiveLabel="Disabled"
+                      />
                     </form>
                   ) : null}
                   <div className="mt-5 flex gap-3">
@@ -264,54 +405,50 @@ export function OrganizationView({ currentUser, users, jobTitles }: Organization
                       <Eye className="h-4 w-4" />
                       View Detail
                     </button>
-                    <form action={handleDeleteMember}>
-                      <input type="hidden" name="id" value={user.id} />
-                      <input type="hidden" name="member_name" value={user.name} />
-                      <button
-                        onClick={(event) => {
-                          if (!confirm(`Delete ${user.name} and their account data?`)) event.preventDefault();
-                        }}
-                        className="rounded border border-error/25 bg-error/10 p-3 text-error hover:bg-error/15"
-                        aria-label={`Delete ${user.name}`}
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </button>
-                    </form>
+                    <DeleteMemberTriggerButton name={user.name} onClick={() => setDeleteTarget(user)} />
                   </div>
                 </GlassPanel>
               );
             })}
           </section>
-        </>
-      ) : (
-        <section className="grid grid-cols-1 gap-gutter md:grid-cols-2 xl:grid-cols-3">
-          {jobTitles.map((title) => (
-            <GlassPanel key={title.id} className="p-6">
-              <Badge className="mb-5 h-6 w-6 text-primary" />
-              <h2 className="text-headline-md font-semibold text-on-surface">{title.name}</h2>
-              <p className="mt-2 text-body-md text-on-surface-variant">{title.description ?? "General"}</p>
-              <p className="mt-6 text-label-sm font-semibold text-primary">
-                {users.filter((user) => user.job_title_id === title.id).length} Active
-              </p>
-            </GlassPanel>
-          ))}
-        </section>
-      )}
 
       {registerOpen ? (
-        <div onClick={() => setRegisterOpen(false)} className="fixed inset-0 z-[60] flex items-center justify-center bg-background/85 p-margin-mobile">
+        <div
+          onClick={() => {
+            if (!submitting) {
+              setRegisterOpen(false);
+              setRegisterError(null);
+            }
+          }}
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-background/85 p-margin-mobile"
+        >
           <GlassPanel onClick={(event) => event.stopPropagation()} className="custom-scrollbar max-h-[92vh] w-full max-w-2xl overflow-y-auto p-6">
             <div className="mb-6 flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-headline-md font-semibold text-on-surface">Register Team Member</h2>
                 <p className="mt-2 text-body-md text-on-surface-variant">
-                  Creates a Supabase Auth account and TaskFlow profile.
+                  Creates a Supabase Auth account and Thuang Tasks profile.
                 </p>
               </div>
-              <button type="button" onClick={() => setRegisterOpen(false)} className="rounded p-2 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface" aria-label="Close registration">
+              <button
+                type="button"
+                onClick={() => {
+                  setRegisterOpen(false);
+                  setRegisterError(null);
+                }}
+                disabled={submitting}
+                className="rounded p-2 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface disabled:cursor-wait disabled:opacity-60"
+                aria-label="Close registration"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
+
+            {registerError ? (
+              <div className="mb-5 rounded-lg border border-error/30 bg-error/10 px-4 py-3 text-label-md font-semibold text-error">
+                {registerError}
+              </div>
+            ) : null}
 
             <form ref={formRef} action={handleInvite} onSubmit={() => setSubmitting(true)} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <label className="space-y-2">
@@ -361,11 +498,19 @@ export function OrganizationView({ currentUser, users, jobTitles }: Organization
               </label>
               <input type="hidden" name="system_role" value="member" />
               <div className="flex flex-col-reverse gap-3 sm:col-span-2 sm:flex-row sm:justify-end">
-                <button type="button" onClick={() => setRegisterOpen(false)} disabled={submitting} className="secondary-button px-5 py-3 text-label-md disabled:cursor-wait disabled:opacity-70">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRegisterOpen(false);
+                    setRegisterError(null);
+                  }}
+                  disabled={submitting}
+                  className="secondary-button px-5 py-3 text-label-md disabled:cursor-wait disabled:opacity-70"
+                >
                   Cancel
                 </button>
                 <button disabled={submitting} className="bronze-button inline-flex min-h-[48px] items-center justify-center gap-2 px-5 py-3 text-label-md disabled:cursor-wait disabled:opacity-70">
-                  <Shield className="h-4 w-4" />
+                  {submitting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
                   {submitting ? "Creating Member..." : "Create Member Account"}
                 </button>
               </div>
@@ -413,21 +558,11 @@ export function OrganizationView({ currentUser, users, jobTitles }: Organization
               <form action={handleUpdatePermission} className="mt-5 rounded-lg border border-secondary/15 bg-surface-container-lowest p-4">
                 <input type="hidden" name="id" value={selectedUser.id} />
                 <input type="hidden" name="member_name" value={selectedUser.name} />
-                <label className="flex cursor-pointer items-center justify-between gap-4">
-                  <span>
-                    <span className="block text-label-md font-semibold text-on-surface">Can add subtasks</span>
-                    <span className="text-label-sm text-on-surface-variant">
-                      {selectedUser.can_add_subtasks ? "Enabled for this member" : "Disabled for this member"}
-                    </span>
-                  </span>
-                  <input
-                    name="can_add_subtasks"
-                    type="checkbox"
-                    defaultChecked={selectedUser.can_add_subtasks}
-                    onChange={(event) => event.currentTarget.form?.requestSubmit()}
-                    className="h-5 w-5 cursor-pointer accent-primary"
-                  />
-                </label>
+                <PermissionToggle
+                  defaultChecked={selectedUser.can_add_subtasks}
+                  activeLabel="Enabled for this member"
+                  inactiveLabel="Disabled for this member"
+                />
               </form>
             ) : null}
 
@@ -448,32 +583,24 @@ export function OrganizationView({ currentUser, users, jobTitles }: Organization
                   />
                 </div>
               </label>
-              <button className="bronze-button mt-3 inline-flex min-h-[44px] w-full items-center justify-center gap-2 px-4 py-3 text-label-md">
-                <KeyRound className="h-4 w-4" />
-                Update Password
-              </button>
+              <UpdatePasswordButton />
             </form>
 
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <form action={handleDeleteMember}>
-                <input type="hidden" name="id" value={selectedUser.id} />
-                <input type="hidden" name="member_name" value={selectedUser.name} />
-                <button
-                  onClick={(event) => {
-                    if (!confirm(`Delete ${selectedUser.name} and their account data?`)) event.preventDefault();
-                  }}
-                  className="secondary-button inline-flex w-full items-center justify-center gap-2 border-error/30 px-4 py-3 text-label-md text-error sm:w-auto"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Delete Account
-                </button>
-              </form>
+              <DeleteMemberTriggerButton name={selectedUser.name} detail onClick={() => setDeleteTarget(selectedUser)} />
               <button type="button" onClick={() => setSelectedUser(null)} className="bronze-button px-5 py-3 text-label-md">
                 Done
               </button>
             </div>
           </GlassPanel>
         </div>
+      ) : null}
+      {deleteTarget ? (
+        <DeleteMemberConfirmationModal
+          member={deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onDelete={handleDeleteMember}
+        />
       ) : null}
       <ToastViewport toasts={toasts} onDismiss={dismissToast} />
     </div>

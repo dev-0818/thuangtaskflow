@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "@/app/globals.css";
 
 export const metadata: Metadata = {
-  title: "TaskFlow",
+  title: "Thuang Tasks",
   description: "Internal task management for focused team delegation."
 };
 

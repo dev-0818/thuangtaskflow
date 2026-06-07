@@ -16,6 +16,9 @@ export type UserProfile = {
   email?: string | null;
   system_role: SystemRole;
   can_add_subtasks: boolean;
+  is_active?: boolean;
+  deleted_at?: string | null;
+  deleted_by?: string | null;
   job_title_id: number | null;
   manager_id: string | null;
   created_at: string;
@@ -37,6 +40,7 @@ export type Subtask = {
   task_id: number;
   title: string;
   assigned_to: string;
+  assigned_by?: string | null;
   deadline_date: string;
   deadline_time: string;
   is_completed: boolean;

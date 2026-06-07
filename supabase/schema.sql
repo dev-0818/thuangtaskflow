@@ -14,6 +14,9 @@ create table if not exists public.users (
   name varchar(255) not null,
   system_role varchar(50) check (system_role in ('manager', 'member')) not null,
   can_add_subtasks boolean default true not null,
+  is_active boolean default true not null,
+  deleted_at timestamptz null,
+  deleted_by uuid references public.users(id) null,
   job_title_id integer references public.master_job_titles(id) null,
   manager_id uuid references public.users(id) null,
   created_at timestamptz default now() not null
@@ -21,6 +24,15 @@ create table if not exists public.users (
 
 alter table public.users
 add column if not exists can_add_subtasks boolean default true not null;
+
+alter table public.users
+add column if not exists is_active boolean default true not null;
+
+alter table public.users
+add column if not exists deleted_at timestamptz null;
+
+alter table public.users
+add column if not exists deleted_by uuid references public.users(id) null;
 
 create table if not exists public.tasks (
   id bigserial primary key,
@@ -54,6 +66,7 @@ create table if not exists public.subtasks (
   task_id bigint references public.tasks(id) on delete cascade not null,
   title varchar(255) not null,
   assigned_to uuid references public.users(id) not null,
+  assigned_by uuid references public.users(id) null,
   deadline_date date not null,
   deadline_time time not null,
   is_completed boolean default false not null,
@@ -68,11 +81,21 @@ add column if not exists completed_at timestamptz null;
 alter table public.subtasks
 add column if not exists completion_notes text null;
 
+alter table public.subtasks
+add column if not exists assigned_by uuid references public.users(id) null;
+
+update public.subtasks st
+set assigned_by = tasks.created_by
+from public.tasks
+where st.task_id = tasks.id
+  and st.assigned_by is null;
+
 create index if not exists idx_users_manager_id on public.users(manager_id);
 create index if not exists idx_users_job_title_id on public.users(job_title_id);
 create index if not exists idx_tasks_created_by on public.tasks(created_by);
 create index if not exists idx_subtasks_task_id on public.subtasks(task_id);
 create index if not exists idx_subtasks_assigned_to on public.subtasks(assigned_to);
+create index if not exists idx_subtasks_assigned_by on public.subtasks(assigned_by);
 create index if not exists idx_subtasks_deadline on public.subtasks(deadline_date, deadline_time);
 create index if not exists idx_subtasks_completed_at on public.subtasks(completed_at);
 
@@ -88,7 +111,7 @@ security definer
 set search_path = public
 stable
 as $$
-  select system_role from public.users where id = auth.uid()
+  select system_role from public.users where id = auth.uid() and is_active = true
 $$;
 
 create or replace function public.is_manager()
@@ -226,10 +249,12 @@ on public.subtasks for insert
 to authenticated
 with check (
   assigned_to = auth.uid()
+  and assigned_by = auth.uid()
   and exists (
     select 1 from public.users
     where users.id = auth.uid()
       and users.can_add_subtasks = true
+      and users.is_active = true
   )
   and exists (
     select 1 from public.subtasks existing

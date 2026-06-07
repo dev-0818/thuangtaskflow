@@ -5,14 +5,25 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { isSupabaseConfigured } from "@/lib/env";
+import { notifyAssignedSubtasks, notifyManagersSubtaskCompleted, notifyPasswordReset } from "@/lib/email-notifications";
 import { createSupabaseServerClient, createSupabaseServiceClient } from "@/lib/supabase/server";
-import type { UserProfile } from "@/lib/types";
+import type { Task, UserProfile } from "@/lib/types";
 
 const requiredString = z.string().trim().min(1);
 const taskPrioritySchema = z.enum(["low", "normal", "high"]);
 
 export type SignInState = {
   error?: string;
+};
+
+export type PasswordResetRequestState = {
+  error?: string;
+  success?: string;
+};
+
+export type PasswordResetState = {
+  error?: string;
+  success?: string;
 };
 
 export type AccountActionState = {
@@ -23,6 +34,37 @@ export type AccountActionState = {
 type SupabaseMutationClient =
   | Awaited<ReturnType<typeof createSupabaseServerClient>>
   | ReturnType<typeof createSupabaseServiceClient>;
+
+function getPublicAppUrl() {
+  const rawUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").trim().replace(/\/$/, "");
+  if (!rawUrl) return "http://localhost:3000";
+  if (/^https?:\/\//i.test(rawUrl)) return rawUrl;
+  return `https://${rawUrl}`;
+}
+
+function formatAuthEmailError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  const normalized = message.trim();
+  const lowered = normalized.toLowerCase();
+
+  if (!normalized || normalized === "{}" || normalized === "[object Object]") {
+    return "Email reset gagal dikirim. Cek RESEND_API_KEY dan TASKFLOW_EMAIL_FROM di env.";
+  }
+
+  if (lowered.includes("rate limit")) {
+    return "Email reset terlalu sering dikirim. Tunggu sebentar sebelum kirim ulang.";
+  }
+
+  if (lowered.includes("not authorized")) {
+    return "Email tujuan belum diizinkan. Pastikan domain sender Resend sudah verified.";
+  }
+
+  if (lowered.includes("redirect")) {
+    return "Redirect URL belum valid. Tambahkan /auth/callback di Supabase Auth URL Configuration.";
+  }
+
+  return normalized;
+}
 
 async function syncTaskStatus(client: SupabaseMutationClient, taskId: number) {
   const { data: taskSubtasks, error: subtaskError } = await client
@@ -59,6 +101,7 @@ async function getCurrentProfile() {
     .single();
 
   if (error) throw error;
+  if ((profile as UserProfile).is_active === false) throw new Error("Account is disabled.");
   return profile as UserProfile;
 }
 
@@ -95,10 +138,23 @@ export async function signIn(_state: SignInState, formData: FormData): Promise<S
   }
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.signInWithPassword(credentials.data);
+  const { data, error } = await supabase.auth.signInWithPassword(credentials.data);
 
   if (error) {
     return { error: "Email atau password salah." };
+  }
+
+  if (data.user) {
+    const { data: profile } = await supabase
+      .from("users")
+      .select("is_active")
+      .eq("id", data.user.id)
+      .maybeSingle();
+
+    if (profile?.is_active === false) {
+      await supabase.auth.signOut();
+      return { error: "Akun ini sudah dinonaktifkan." };
+    }
   }
 
   redirect("/dashboard");
@@ -114,6 +170,114 @@ export async function signOut() {
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut();
   redirect("/login");
+}
+
+export async function requestPasswordReset(
+  _state: PasswordResetRequestState,
+  formData: FormData
+): Promise<PasswordResetRequestState> {
+  const emailResult = z.string().email("Format email belum valid.").safeParse(formData.get("email"));
+
+  if (!emailResult.success) {
+    return { error: emailResult.error.issues[0]?.message ?? "Email wajib diisi." };
+  }
+
+  if (!isSupabaseConfigured()) {
+    return { error: "Reset password hanya tersedia saat Supabase aktif." };
+  }
+
+  const email = emailResult.data.toLowerCase();
+  const appUrl = getPublicAppUrl();
+  const service = createSupabaseServiceClient();
+  const genericSuccess = "Kalau email ini terdaftar, link reset password akan dikirim ke inbox kamu.";
+
+  try {
+    const { data: profile, error: profileError } = await service
+      .from("users")
+      .select("id,is_active")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (profileError) throw profileError;
+    if (!profile || profile.is_active === false) return { success: genericSuccess };
+
+    const { data, error } = await service.auth.admin.generateLink({
+      type: "recovery",
+      email,
+      options: {
+        redirectTo: `${appUrl}/reset-password`
+      }
+    });
+
+    if (error) throw error;
+
+    const tokenHash = data.properties?.hashed_token;
+    if (!tokenHash) {
+      throw new Error("Supabase recovery token tidak tersedia.");
+    }
+
+    const resetUrl = `${appUrl}/reset-password?token_hash=${encodeURIComponent(tokenHash)}&type=recovery`;
+    await notifyPasswordReset(email, { resetUrl });
+  } catch (error) {
+    return { error: formatAuthEmailError(error) };
+  }
+
+  return { success: "Link reset password sudah dikirim. Cek inbox email kamu." };
+}
+
+export async function updatePasswordFromReset(
+  _state: PasswordResetState,
+  formData: FormData
+): Promise<PasswordResetState> {
+  const payload = z.object({
+    password: z.string().min(8, "Password minimal 8 karakter."),
+    confirm_password: z.string().min(1, "Konfirmasi password wajib diisi.")
+  }).refine((value) => value.password === value.confirm_password, {
+    path: ["confirm_password"],
+    message: "Konfirmasi password tidak sama."
+  }).safeParse({
+    password: formData.get("password"),
+    confirm_password: formData.get("confirm_password")
+  });
+
+  if (!payload.success) {
+    return { error: payload.error.issues[0]?.message ?? "Password belum valid." };
+  }
+
+  if (!isSupabaseConfigured()) {
+    return { success: "Password berhasil diperbarui." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Link reset password belum valid atau sudah kedaluwarsa." };
+  }
+
+  const { data: profile } = await supabase
+    .from("users")
+    .select("is_active")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profile?.is_active === false) {
+    await supabase.auth.signOut();
+    return { error: "Akun ini sudah dinonaktifkan." };
+  }
+
+  const { error } = await supabase.auth.updateUser({
+    password: payload.data.password
+  });
+
+  if (error) {
+    return { error: error.message || "Password gagal diperbarui." };
+  }
+
+  await supabase.auth.signOut();
+  return { success: "Password berhasil diperbarui. Silakan login ulang." };
 }
 
 export async function updateCurrentManagerName(_state: AccountActionState, formData: FormData): Promise<AccountActionState> {
@@ -210,10 +374,62 @@ export async function inviteMember(formData: FormData) {
     job_title_id: formData.get("job_title_id") || null
   });
 
+  const email = payload.email.toLowerCase();
   const service = createSupabaseServiceClient();
+  const { data: existingProfile, error: existingProfileError } = await service
+    .from("users")
+    .select("*")
+    .eq("email", email)
+    .maybeSingle();
+
+  if (existingProfileError) throw existingProfileError;
+
+  if (existingProfile) {
+    if ((existingProfile as UserProfile).is_active !== false) {
+      throw new Error("Email ini sudah terdaftar sebagai user aktif.");
+    }
+
+    const authUpdate = {
+      email,
+      email_confirm: true,
+      ban_duration: "none",
+      user_metadata: {
+        name: payload.name,
+        system_role: payload.system_role
+      },
+      ...(payload.password ? { password: payload.password } : {})
+    };
+
+    const { error: authError } = await service.auth.admin.updateUserById(existingProfile.id, authUpdate);
+    if (authError) throw authError;
+
+    const { error: profileError } = await service
+      .from("users")
+      .update({
+        email,
+        name: payload.name,
+        system_role: payload.system_role,
+        can_add_subtasks: payload.can_add_subtasks,
+        is_active: true,
+        manager_id: payload.manager_id,
+        job_title_id: payload.job_title_id,
+        deleted_at: null,
+        deleted_by: null
+      })
+      .eq("id", existingProfile.id);
+
+    if (profileError) throw profileError;
+
+    revalidatePath("/dashboard");
+    revalidatePath("/organization");
+    revalidatePath("/tasks");
+    revalidatePath("/calendar");
+    return;
+  }
+
   const authResult = payload.password
     ? await service.auth.admin.createUser({
-      email: payload.email,
+      email,
       password: payload.password,
       email_confirm: true,
       user_metadata: {
@@ -221,7 +437,7 @@ export async function inviteMember(formData: FormData) {
         system_role: payload.system_role
       }
     })
-    : await service.auth.admin.inviteUserByEmail(payload.email, {
+    : await service.auth.admin.inviteUserByEmail(email, {
       data: {
         name: payload.name,
         system_role: payload.system_role
@@ -233,10 +449,11 @@ export async function inviteMember(formData: FormData) {
 
   const { error } = await service.from("users").insert({
     id: authResult.data.user.id,
-    email: payload.email,
+    email,
     name: payload.name,
     system_role: payload.system_role,
     can_add_subtasks: payload.can_add_subtasks,
+    is_active: true,
     manager_id: payload.manager_id,
     job_title_id: payload.job_title_id
   });
@@ -261,19 +478,22 @@ export async function deleteMember(formData: FormData) {
     .eq("manager_id", id);
   if (subordinateError) throw subordinateError;
 
-  const { error: subtaskError } = await service
-    .from("subtasks")
-    .delete()
-    .eq("assigned_to", id);
-  if (subtaskError) throw subtaskError;
-
   const { error: profileError } = await service
     .from("users")
-    .delete()
+    .update({
+      is_active: false,
+      can_add_subtasks: false,
+      manager_id: null,
+      deleted_at: new Date().toISOString(),
+      deleted_by: manager.id
+    })
     .eq("id", id);
   if (profileError) throw profileError;
 
-  const { error: authError } = await service.auth.admin.deleteUser(id);
+  const { error: authError } = await service.auth.admin.updateUserById(id, {
+    ban_duration: "876000h",
+    user_metadata: { disabled: true, disabled_by: manager.id }
+  });
   if (authError) throw authError;
 
   revalidatePath("/dashboard");
@@ -421,6 +641,7 @@ export async function createTask(formData: FormData) {
     task_id: task.id,
     title,
     assigned_to: payload.assigned_to[index],
+    assigned_by: manager.id,
     deadline_date: payload.deadline_dates[index],
     deadline_time: payload.deadline_times[index],
     is_completed: false
@@ -430,6 +651,7 @@ export async function createTask(formData: FormData) {
     const { error: subtaskError } = await service.from("subtasks").insert(subtasks);
     if (subtaskError) throw subtaskError;
     await syncTaskStatus(service, task.id);
+    await notifyAssignedSubtasks(service, task as Task, subtasks);
   }
 
   revalidatePath("/dashboard");
@@ -585,14 +807,26 @@ export async function createSubtask(formData: FormData) {
     deadline_time: formData.get("deadline_time")
   });
 
+  const subtaskPayload = { ...payload, assigned_by: profile.id };
+  const service = createSupabaseServiceClient();
   const client = profile.system_role === "manager"
-    ? createSupabaseServiceClient()
+    ? service
     : await createSupabaseServerClient();
 
-  const { error } = await client.from("subtasks").insert(payload);
+  const { error } = await client.from("subtasks").insert(subtaskPayload);
   if (error) throw error;
 
-  await syncTaskStatus(createSupabaseServiceClient(), payload.task_id);
+  await syncTaskStatus(service, subtaskPayload.task_id);
+
+  const { data: task, error: taskError } = await service
+    .from("tasks")
+    .select("*")
+    .eq("id", subtaskPayload.task_id)
+    .single();
+
+  if (!taskError && task) {
+    await notifyAssignedSubtasks(service, task as Task, [subtaskPayload]);
+  }
 
   revalidatePath("/dashboard");
   revalidatePath("/tasks");
@@ -683,11 +917,36 @@ export async function markSubtaskComplete(formData: FormData) {
       completion_notes: isCompleted ? completionNotes : null
     })
     .eq("id", id)
-    .select("task_id")
+    .select("task_id,assigned_by")
     .single();
 
   if (error) throw error;
-  await syncTaskStatus(createSupabaseServiceClient(), data.task_id);
+  const service = createSupabaseServiceClient();
+  await syncTaskStatus(service, data.task_id);
+
+  if (profile.system_role === "member" && isCompleted) {
+    const [{ data: task }, { data: subtask }] = await Promise.all([
+      service.from("tasks").select("*").eq("id", data.task_id).single(),
+      service.from("subtasks").select("*").eq("id", id).single()
+    ]);
+
+    if (task && subtask) {
+      const notificationManagerId = subtask.assigned_by ?? task.created_by;
+      await notifyManagersSubtaskCompleted(
+        service,
+        task as Task,
+        {
+          title: subtask.title,
+          deadline_date: subtask.deadline_date,
+          deadline_time: subtask.deadline_time,
+          completion_notes: subtask.completion_notes ?? null,
+          completed_at: subtask.completed_at ?? null
+        },
+        { name: profile.name },
+        notificationManagerId ? [notificationManagerId] : []
+      );
+    }
+  }
 
   revalidatePath("/dashboard");
   revalidatePath("/tasks");
