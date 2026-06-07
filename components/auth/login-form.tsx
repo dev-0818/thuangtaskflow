@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
-import { ArrowRight, Info, LoaderCircle, Lock, Mail, User, X } from "lucide-react";
+import { ArrowRight, Info, LoaderCircle, Lock, Mail, X } from "lucide-react";
 import { requestPasswordReset, signIn, type PasswordResetRequestState, type SignInState } from "@/app/actions";
 
 type LoginFormProps = {
@@ -133,14 +133,14 @@ export function LoginForm({ demoMode }: LoginFormProps) {
             </div>
           ) : null}
 
-          <label className="mb-2 block text-label-md font-semibold text-on-surface">Username</label>
+          <label className="mb-2 block text-label-md font-semibold text-on-surface">Email</label>
           <div className="mb-6 flex items-center gap-3 border-b border-secondary/20 bg-surface-container-high/60 px-4 py-4 transition-colors focus-within:border-primary">
-            <User className="h-5 w-5 text-on-surface-variant" />
+            <Mail className="h-5 w-5 text-on-surface-variant" />
             <input
               name="email"
-              type="text"
-              defaultValue={demoMode ? "manager" : ""}
-              placeholder="Enter your username"
+              type="email"
+              defaultValue={demoMode ? "manager@demo.local" : ""}
+              placeholder="Enter your email"
               className="w-full bg-transparent text-body-md text-on-surface outline-none placeholder:text-on-surface-variant/55"
             />
           </div>

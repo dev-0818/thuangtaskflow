@@ -29,7 +29,7 @@ type OrganizationViewProps = {
   jobTitles: JobTitle[];
 };
 
-type RoleFilter = "all" | "manager" | "member";
+type RoleFilter = "all" | "member";
 type PermissionFilter = "all" | "can_add" | "cannot_add";
 type MemberSort = "name_asc" | "name_desc" | "created_desc" | "created_asc" | "title_asc";
 
@@ -203,7 +203,7 @@ export function OrganizationView({ currentUser, users, jobTitles }: Organization
   const { toasts, showToast, dismissToast } = useToastQueue();
   const activeUsers = users.filter((user) => user.is_active !== false);
   const managers = activeUsers.filter((user) => user.system_role === "manager");
-  const members = activeUsers.filter((user) => user.id !== currentUser.id);
+  const members = activeUsers.filter((user) => user.system_role !== "manager");
   const filteredMembers = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
@@ -319,7 +319,6 @@ export function OrganizationView({ currentUser, users, jobTitles }: Organization
                   aria-label="Filter members by role"
                 >
                   <option value="all" className="bg-surface text-on-surface">All Roles</option>
-                  <option value="manager" className="bg-surface text-on-surface">Managers</option>
                   <option value="member" className="bg-surface text-on-surface">Members</option>
                 </select>
               </label>
